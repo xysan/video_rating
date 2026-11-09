@@ -99,3 +99,17 @@ python -m app.seed
 全局上下文未规定字段长度和分数精度，本次采用整数主键、唯一字符串长度 191、名称长度 255、标题与配置值 TEXT、分数 DECIMAL(18,6)、发布日期 DATE、其余时间 DATETIME（由调用方统一提供 UTC）。description 和 updated_by 可空，其余字段非空。没有新增任何字段。
 
 回滚命令为 `python -m alembic downgrade base`，会删除全部四张业务表及数据，请先备份；重新执行 upgrade head 可恢复空表结构。MySQL 实际迁移验证需可用的 MySQL 8 实例，SQLite 验证不代表 MySQL 实测通过。
+
+## PR-04：飞书后台增量同步
+
+安装更新后的 backend/requirements.txt 并重启后端。FEISHU_SYNC_ENABLED=true 时，启动 APScheduler interval 任务，间隔由 SYNC_INTERVAL_MINUTES 控制（正整数分钟）；首次定时执行在一个间隔之后。关闭此开关只关闭定时任务，管理员仍可手动同步。
+
+管理员携带 Authorization: Bearer token 调用 POST /api/admin/sync/run，返回 202 表示后台已接收；已有任务运行时返回 409。GET /api/admin/sync/status 返回 running、started_at、finished_at、last_sync_at、success、fetched、inserted、updated、skipped、error。状态仅保存在当前进程，重启后清空，历史信息查看 Python logging 输出；last_sync_at 是最近一次完成时间，须结合 success 判断结果。
+
+必须以单个 uvicorn worker 运行，避免多个进程重复调度；同进程定时及手动触发共享互斥状态。关闭进程会等待当前同步结束。无需新数据库表或迁移。
+
+客户端每轮获取 tenant_access_token，按每页 500 条遍历 records/search，automatic_fields=true 获取 last_modified_time；不设置 view_id。每条记录以 feishu_record_id 查找并比较修改时间，同秒时另比较完整 raw_payload；没变化不更新 synced_at。每轮分页读取全表，但只写新增或变化的数据，不删除本地记录。整轮事务提交，任何分页、解析、写入失败会回滚本轮新增和更新并记录失败，后续调度继续运行。
+
+当前真实表字段映射为 up主、标题、发布时间，可通过 FEISHU_UP_NAME_FIELD、FEISHU_TITLE_FIELD、FEISHU_PUBLISH_DATE_FIELD 配置。支持单值查找引用和富文本标题；缺少 UP 主、标题或发布时间的记录按用户确认的规则跳过并记录 record_id、原因和 skipped 数量；多值、格式错误或缺少修改时间时明确失败，不使用占位值。日期毫秒时间戳按 UTC+8 转换为发布日期，修改及同步时间按 UTC 保存。原始记录包含自动字段，完整保存到 raw_payload。
+
+验证执行 `python -m pytest tests -q`。测试中的飞书响应和用户仅在 pytest 临时数据库使用，不会生成业务演示数据；测试进程关闭真实定时同步。回滚代码前关闭 FEISHU_SYNC_ENABLED 并停止后端；本 PR 无迁移，不删除已经同步的真实记录。

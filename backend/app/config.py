@@ -21,8 +21,11 @@ class Settings(BaseSettings):
     FEISHU_APP_SECRET: str = ""
     FEISHU_APP_TOKEN: str = ""
     FEISHU_TABLE_ID: str = ""
-    SYNC_INTERVAL_MINUTES: int = 15
+    SYNC_INTERVAL_MINUTES: int = Field(default=15, gt=0)
     FEISHU_SYNC_ENABLED: bool = False
+    FEISHU_UP_NAME_FIELD: str = "up主"
+    FEISHU_TITLE_FIELD: str = "标题"
+    FEISHU_PUBLISH_DATE_FIELD: str = "发布时间"
     SEED_ADMIN_PASSWORD: str = ""
 
     @field_validator("DATABASE_URL")
