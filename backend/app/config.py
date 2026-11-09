@@ -28,8 +28,8 @@ class Settings(BaseSettings):
     @field_validator("DATABASE_URL")
     @classmethod
     def validate_database_url(cls, value: str) -> str:
-        if make_url(value).drivername != "mysql+pymysql":
-            raise ValueError("仅支持 mysql+pymysql 连接串")
+        if make_url(value).drivername not in {"mysql+pymysql", "sqlite"}:
+            raise ValueError("仅支持 MySQL 或临时本地 SQLite 连接串")
         return value
 
     @property

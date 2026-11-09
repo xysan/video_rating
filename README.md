@@ -80,3 +80,22 @@ npm run dev
 ## 回滚
 
 停止本 PR 启动的前后端进程，执行 `docker compose down` 停止本 PR 的 MySQL 容器，保留数据卷。未建表，无迁移可回滚。代码合并后如需回滚，通过独立分支 revert 合并提交并提交 PR，不直接推 main。
+
+## PR-02：数据库迁移与管理员初始化
+
+在 backend 目录激活虚拟环境，安装 requirements.txt 后运行：
+
+```sh
+python -m alembic upgrade head
+python -m app.seed
+```
+
+种子脚本要求先在 backend/.env 中设置 SEED_ADMIN_PASSWORD，不设置会报错退出；UTF-8 编码最多 72 字节。只创建 admin 管理员，使用 bcrypt 加盐哈希；重复运行保留已有用户及密码，不创建业务数据。请勿将密码写入命令行或提交环境文件。
+
+当前允许 SQLite 临时预览，DATABASE_URL 可设为 sqlite:///./dev.db，务必在 backend 目录运行命令。正式数据库仍使用 MySQL 8 的 mysql+pymysql 连接串；初始迁移明确指定 InnoDB、utf8mb4 和 utf8mb4_unicode_ci。SQLite 的枚举使用 CHECK 约束，MySQL 使用原生 ENUM；JSON 使用 SQLAlchemy JSON 类型。
+
+四张业务表之外，Alembic 自动维护 alembic_version 迁移版本表，这是迁移工具元数据，不是业务表。项目仅有一个外键 scores.video_snapshot_id → video_snapshots.id，updated_by 不建外键。
+
+全局上下文未规定字段长度和分数精度，本次采用整数主键、唯一字符串长度 191、名称长度 255、标题与配置值 TEXT、分数 DECIMAL(18,6)、发布日期 DATE、其余时间 DATETIME（由调用方统一提供 UTC）。description 和 updated_by 可空，其余字段非空。没有新增任何字段。
+
+回滚命令为 `python -m alembic downgrade base`，会删除全部四张业务表及数据，请先备份；重新执行 upgrade head 可恢复空表结构。MySQL 实际迁移验证需可用的 MySQL 8 实例，SQLite 验证不代表 MySQL 实测通过。
