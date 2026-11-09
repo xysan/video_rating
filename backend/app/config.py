@@ -1,7 +1,7 @@
 from functools import lru_cache
 from pathlib import Path
 
-from pydantic import field_validator
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy.engine import make_url
 
@@ -14,8 +14,8 @@ class Settings(BaseSettings):
     )
 
     DATABASE_URL: str
-    JWT_SECRET: str
-    JWT_EXPIRE_MINUTES: int = 60
+    JWT_SECRET: str = Field(min_length=32)
+    JWT_EXPIRE_MINUTES: int = Field(default=60, gt=0)
     CORS_ORIGINS: str = ""
     FEISHU_APP_ID: str = ""
     FEISHU_APP_SECRET: str = ""
