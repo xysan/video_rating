@@ -1,0 +1,15 @@
+/* 初始化最小样式，完整设计令牌由 PR-07 定稿。 */
+:root {
+  --color-background: #10131c;
+  --color-text: #f2f4fa;
+  --font-body: "Microsoft YaHei", "PingFang SC", sans-serif;
+  --space-page: 2rem;
+}
+body {
+  margin: 0;
+  background: var(--color-background);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  font-variant-numeric: tabular-nums;
+}
+main { padding: var(--space-page); }
