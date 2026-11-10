@@ -139,3 +139,16 @@ BILIBILI_CACHE_ENABLED 默认 true：启动时后台刷新，之后每 15 分钟
 本 PR 无数据库迁移；回滚代码并重启即可清除缓存。继续使用单 worker，避免重复抓取。pytest 中禁用真实定时抓取，HTTP mock 仅用于测试。
 
 管理员批量基线导入：POST /api/admin/configs/import-standards 接收 JSON 数组，每项包含 up_name 和五个维度的升序五元素数组；重复 UP、非法值会整批拒绝。返回 imported/created/updated，存在则更新并记录操作者。导入后下一次同步将按配置变化重算，也可执行 `python -m app.scoring.task` 立即计算。Dashboard 无评分时返回 null，按发布日期降序。
+
+
+## PR-07：前端设计系统与登录骨架
+
+前端运行 `npm ci`、`npm run dev`，访问 http://localhost:5173/login 。API 地址继续通过 frontend/.env 的 VITE_API_BASE_URL 配置；本地后端必须启动，并通过 CORS_ORIGINS 放行前端地址。运行 `npm test` 验证会话与路由，`npm run build` 验证生产构建。
+
+登录先请求 /api/auth/login，再调用 /api/me 获取真实角色；token 仅保存在当前标签页的 sessionStorage，通过 Authorization: Bearer 请求头发送。401 清除当前会话并跳转登录；普通成员无法进入 /admin 路由。前端守卫仅控制导航，数据访问继续由后端权限依赖校验。
+
+五个业务路由当前仅显示页面标题。ECharts 已锁定依赖，业务图表在后续 PR 实现。GlassPanel、AppButton、AppInput、AppLayout 位于 components/ui；色彩、圆角、模糊、阴影集中在 tokens.css。页面最多两块独立玻璃区域，控件使用实底；背景光斑固定，无滚动动画，尊重 reduced-motion 设置。html/body 无外层滚动，小尺寸页面内容区域允许滚动，避免遮挡表单。
+
+品牌图形使用公司提供的“组合logo/图形.png”，原样复制至 public/brand/mark.png；英文展示字体为 Google Fonts Syne 600，字体网络不可用时回退 sans-serif，中文正文使用系统黑体。后续页面复用现有 Token 与组件，不新增独立颜色体系。
+
+本次无数据库或后端变更。回滚前端代码与 package-lock.json 后执行 npm ci 并重启 Vite 即可。
