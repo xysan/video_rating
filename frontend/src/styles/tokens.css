@@ -1,15 +1,55 @@
-/* 初始化最小样式，完整设计令牌由 PR-07 定稿。 */
+@import url("https://fonts.googleapis.com/css2?family=Syne:wght@600&display=swap");
 :root {
-  --color-background: #10131c;
-  --color-text: #f2f4fa;
-  --font-body: "Microsoft YaHei", "PingFang SC", sans-serif;
-  --space-page: 2rem;
+  color-scheme: dark;
+  --color-bg: #0b1020;
+  --color-text: #f4f3fc;
+  --color-muted: #b3b5ce;
+  --color-subtle: #9b9fb9;
+  --color-brand: #c4b4ff;
+  --color-brand-hover: #d5c9ff;
+  --color-on-brand: #18132c;
+  --color-border: rgba(255, 255, 255, 0.12);
+  --color-glass: rgba(255, 255, 255, 0.06);
+  --color-input: #171b30;
+  --color-nav: #262841;
+  --color-danger: #ffb5bc;
+  --color-clear: transparent;
+  --color-mascot: #c9c5ee;
+  --color-mascot-text: #393450;
+  --color-purple: rgba(93, 57, 184, 0.4);
+  --color-cyan: rgba(19, 130, 150, 0.25);
+  --color-pink: rgba(186, 50, 134, 0.22);
+  --color-story-top: rgba(119, 99, 187, 0.12);
+  --color-story-bottom: rgba(23, 30, 52, 0.18);
+  --radius-panel: 24px;
+  --radius-input: 14px;
+  --radius-small: 12px;
+  --radius-pill: 999px;
+  --blur-panel: 24px;
+  --blur-glow: 100px;
+  --shadow-panel: 0 8px 32px rgba(0, 0, 0, 0.2);
+  --shadow-button: 0 6px 26px rgba(162, 133, 255, 0.2);
+  --shadow-focus: 0 0 0 3px rgba(196, 180, 255, 0.2);
+  --font-body: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  --font-display: "Syne", sans-serif;
+  --text-xs: 10px;
+  --text-sm: 12px;
+  --text-body: 14px;
+  --text-lg: 16px;
+  --text-intro: 19px;
+  --text-heading: 32px;
+  --text-hero: clamp(36px, 4vw, 54px);
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --sidebar-width: 252px;
+  --control-height: 52px;
+  --transition: 180ms ease;
 }
-body {
-  margin: 0;
-  background: var(--color-background);
-  color: var(--color-text);
-  font-family: var(--font-body);
-  font-variant-numeric: tabular-nums;
-}
-main { padding: var(--space-page); }
