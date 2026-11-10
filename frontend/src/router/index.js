@@ -20,7 +20,9 @@ export const router = createRouter({
       component: AppLayout,
       children: pages.map(([path, title, english]) => ({
         path,
-        component: ShellView,
+        component: path.endsWith("/dashboard")
+          ? () => import("../views/DashboardView.vue")
+          : ShellView,
         meta: { title, english, admin: path.startsWith("admin/") },
       })),
     },

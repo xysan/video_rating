@@ -53,3 +53,16 @@
   --control-height: 52px;
   --transition: 180ms ease;
 }
+
+/* 排名语义色与高分强调沿用现有深色品牌体系。 */
+:root {
+  --color-medal-gold: #f4d28b;
+  --color-medal-silver: #d3dfef;
+  --color-medal-bronze: #e5b294;
+  --color-cover-shade: rgba(11, 16, 32, 0.7);
+  --text-rank-score: 24px;
+  --shadow-high-rest:
+    0 0 0 1px rgba(196, 180, 255, 0.16), 0 0 8px rgba(196, 180, 255, 0.12);
+  --shadow-high-glow:
+    0 0 0 1px rgba(196, 180, 255, 0.4), 0 0 16px rgba(196, 180, 255, 0.28);
+}
