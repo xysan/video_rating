@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     FEISHU_APP_TOKEN: str = ""
     FEISHU_TABLE_ID: str = ""
     SYNC_INTERVAL_MINUTES: int = Field(default=15, gt=0)
+    BILIBILI_CACHE_ENABLED: bool = True
     FEISHU_SYNC_ENABLED: bool = False
     FEISHU_UP_NAME_FIELD: str = "up主"
     FEISHU_TITLE_FIELD: str = "标题"

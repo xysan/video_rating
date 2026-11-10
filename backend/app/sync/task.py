@@ -80,7 +80,7 @@ class SyncService:
         self.executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="feishu-sync")
         self.scheduler = BackgroundScheduler(timezone="UTC")
         self.closed = False
-        self.state = {"running": False, "started_at": None, "finished_at": None, "last_sync_at": None, "success": None, "fetched": 0, "inserted": 0, "updated": 0, "skipped": 0, "error": None}
+        self.state = {"running": False, "started_at": None, "finished_at": None, "last_sync_at": None, "success": None, "fetched": 0, "inserted": 0, "updated": 0, "skipped": 0, "error": None, "scoring": None}
 
     def status(self):
         with self.lock:
@@ -109,6 +109,7 @@ class SyncService:
         fetched = inserted = updated = skipped = 0
         error = None
         success = False
+        scoring = None
         logger.info("飞书同步开始 started_at=%s", started.isoformat())
         try:
             with self.session_factory() as session, session.begin():
@@ -130,6 +131,14 @@ class SyncService:
                         existing.synced_at = utc_now().replace(tzinfo=None)
                         updated += 1
             success = True
+            try:
+                from app.scoring.task import sync_and_calculate
+                scoring = sync_and_calculate(self.session_factory)
+            except Exception as exc:
+                from app.scoring.calculator import ConfigurationError
+                reason = str(exc) if isinstance(exc, ConfigurationError) else type(exc).__name__
+                scoring = {"status": "error", "message": reason}
+                logger.error("同步已完成但评分失败 reason=%s", reason)
         except Exception as exc:
             # 任务边界捕获异常并记录失败，调度线程继续运行；事务自动回滚。
             error = str(exc) if isinstance(exc, FeishuError) else (f"ValueError: {exc}" if isinstance(exc, ValueError) else f"{type(exc).__name__}: 同步解析或数据库写入失败")
@@ -138,7 +147,7 @@ class SyncService:
         finally:
             finished = utc_now().isoformat()
             with self.lock:
-                self.state.update(running=False, started_at=started.isoformat(), finished_at=finished, last_sync_at=finished, success=success, fetched=fetched, inserted=inserted, updated=updated, skipped=skipped, error=error)
+                self.state.update(running=False, started_at=started.isoformat(), finished_at=finished, last_sync_at=finished, success=success, fetched=fetched, inserted=inserted, updated=updated, skipped=skipped, error=error, scoring=scoring)
             logger.info("飞书同步结束 finished_at=%s success=%s fetched=%s inserted=%s updated=%s skipped=%s", finished, success, fetched, inserted, updated, skipped)
 
     def close(self):

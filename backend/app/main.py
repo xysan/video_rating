@@ -6,7 +6,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.auth import router as auth_router
 from app.config import get_settings
 from app.api.sync import router as sync_router
+from app.api.configs import router as configs_router
 from app.database import SessionLocal
+from app.api.scores import router as scores_router
+from app.api.management import router as management_router
+from app.sync.bilibili_crawler import BilibiliCacheService
 from app.sync.task import SyncService
 
 settings = get_settings()
@@ -15,9 +19,13 @@ async def lifespan(app):
     service = SyncService(settings, SessionLocal)
     app.state.sync_service = service
     service.start()
+    cache_service = BilibiliCacheService(SessionLocal)
+    if settings.BILIBILI_CACHE_ENABLED:
+        cache_service.start()
     try:
         yield
     finally:
+        cache_service.close()
         service.close()
 
 
@@ -26,12 +34,15 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
     allow_credentials=False,
-    allow_methods=["GET", "POST"],
+    allow_methods=["GET", "POST", "PUT"],
     allow_headers=["*"],
 )
 
 app.include_router(auth_router)
 app.include_router(sync_router)
+app.include_router(configs_router)
+app.include_router(scores_router)
+app.include_router(management_router)
 
 
 @app.get("/api/health")

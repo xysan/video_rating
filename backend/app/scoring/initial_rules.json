@@ -1,0 +1,59 @@
+{
+  "weight_play": 0.4,
+  "weight_interact": 0.2,
+  "weight_jump_3s": 0.05,
+  "weight_progress": 0.05,
+  "weight_convert": 0.1,
+  "weight_difficulty": 0.1,
+  "weight_efficiency": 0.1,
+  "score_diff_S": 100,
+  "score_diff_A": 80,
+  "score_diff_B": 65,
+  "efficiency_scores": {
+    "按时": 100,
+    "推迟1-2天": 80,
+    "推迟2-3天": 65,
+    "推迟3-5天": 40,
+    "推迟5天以上": 0
+  },
+  "ranking_bonuses": [
+    {
+      "tag": "每周必看",
+      "score": 10
+    },
+    {
+      "tag": "全站",
+      "score": 5
+    },
+    {
+      "tag": "热门",
+      "score": 2
+    }
+  ],
+  "traffic_penalty_thresholds": {
+    "lower": 0.3,
+    "upper": 0.6,
+    "middle_penalty": 5,
+    "high_penalty": 10
+  },
+  "neutral_score": 0,
+  "interpolation_scores": [
+    10,
+    35,
+    65,
+    85,
+    100
+  ],
+  "calculation_age_days": 15,
+  "metric_fields": {
+    "play": "播放量",
+    "interact": "互动率",
+    "jump_3s": "3s跳出率",
+    "progress": "平均播放进度",
+    "convert": "播转粉率",
+    "difficulty": null,
+    "efficiency": null,
+    "tags": "排行",
+    "traffic_ratio": null
+  }
+}

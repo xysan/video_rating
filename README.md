@@ -113,3 +113,29 @@ python -m app.seed
 当前真实表字段映射为 up主、标题、发布时间，可通过 FEISHU_UP_NAME_FIELD、FEISHU_TITLE_FIELD、FEISHU_PUBLISH_DATE_FIELD 配置。支持单值查找引用和富文本标题；缺少 UP 主、标题或发布时间的记录按用户确认的规则跳过并记录 record_id、原因和 skipped 数量；多值、格式错误或缺少修改时间时明确失败，不使用占位值。日期毫秒时间戳按 UTC+8 转换为发布日期，修改及同步时间按 UTC 保存。原始记录包含自动字段，完整保存到 raw_payload。
 
 验证执行 `python -m pytest tests -q`。测试中的飞书响应和用户仅在 pytest 临时数据库使用，不会生成业务演示数据；测试进程关闭真实定时同步。回滚代码前关闭 FEISHU_SYNC_ENABLED 并停止后端；本 PR 无迁移，不删除已经同步的真实记录。
+
+## PR-05：配置化评分
+
+在 backend 目录依次执行 `python -m alembic upgrade head`、`python -m app.scoring.initialize_configs`。初始化只写入用户确认的权重、分值、阈值及字段映射，不覆盖已有配置，也不生成 UP 主基线。config_value 保持 TEXT，内容为 JSON。新增唯一约束迁移禁止同一视频同一算法版本产生重复评分，若历史有重复则迁移失败，不擅自删除数据。
+
+管理员在 Swagger 调用 GET /api/admin/configs 或 PUT /api/admin/configs/{config_key}。请求体格式为 `{"config_value": JSON值, "description": "说明"}`；例如 weight_play 的值为 0.4。UP 主基线键为 up_standards_{up_name}，值含 play、interact、jump_3s、progress、convert 五个升序五元素数组；反向指标也按升序输入。member 无权访问这些接口。
+
+所有数值规则初始化清单见 backend/app/scoring/initial_rules.json；该文件仅用于显式初始化及输入校验，实际计算只读数据库，缺少配置时报错。没有真实 UP 主基线时跳过评分。metric_fields 可配置飞书字段名；当前难度、效率、投流比例未确认来源，映射保持 null，算法按原规则返回 partial_success，不猜测字段。
+
+同步成功后自动后台评分，也可运行 `python -m app.scoring.task` 计算已同步快照。默认算法版本 v1.0，默认筛选发布满 15 天的视频；无变化跳过，输入或相关配置变化则更新原评分。score_detail 保存完整分项、加减分、缺失项及计算配置快照，未提供 member 明细接口。
+
+本 PR 回滚迁移：`python -m alembic downgrade 92bc01ba8d6d`，仅移除评分唯一约束，保留表与记录。迁移须先备份；SQLite 正反向验证不代表 MySQL 8 已完成实测。
+
+## PR-06：看板、评分查询与管理
+
+所有接口使用 Authorization: Bearer token。GET /api/member/dashboard 返回 top_videos 与 videos；近 30 天按北京时间今天及前 29 个自然日的发布日期筛选，使用 >= 起始日期、< 明天的区间，不对数据库日期列套函数。排行榜仅取有评分的视频，最多五条且不返回 BV；卡片保留 bv_id，score > 85 时 is_high_score=true。尚未评分返回 null，不补造得分。
+
+GET /api/member/scores 与 GET /api/admin/scores 支持 page、page_size（1–100）、up_name、date_from、date_to、director。日期为 YYYY-MM-DD、结束日期包含当天，编导按实际字段解析后精确匹配。多算法版本取最近计算的评分；日期/UP 在 SQL 筛选，嵌套编导在应用层筛选后分页，数据量增长时需优化这一部分。管理员额外获得完整 raw_payload、score_detail；成员仅投影允许的 JSON 子字段，不查询这两项敏感信息。snapshot_play_count 是飞书快照播放量，play_count 是缓存实时播放量。
+
+GET /api/admin/users 不返回密码哈希；PUT /api/admin/users/{user_id}/role 请求体为 {"role":"admin"} 或 {"role":"member"}，权限变更下一次请求生效。GET /api/admin/export/csv 下载 UTF-8 BOM CSV，包含评分与快照核心指标，转义公式前缀。算法配置继续使用 /api/admin/configs。
+
+BILIBILI_CACHE_ENABLED 默认 true：启动时后台刷新，之后每 15 分钟刷新，最多 4 个并发请求。BV 优先取真实字段 BV号，缺失则解析标题链接；编导取真实字段 编导。缓存仅存在 VIDEO_CACHE 字典，重启丢失；不写库。每轮缓存以成功结果替换，失败视频记录日志且缓存字段返回 null。ranking_status 仅包含 B站响应的 current_rank 与 historical_rank，不推断热门/每周必看标签。B站接口失败或限制请求时不进行绕过。
+
+本 PR 无数据库迁移；回滚代码并重启即可清除缓存。继续使用单 worker，避免重复抓取。pytest 中禁用真实定时抓取，HTTP mock 仅用于测试。
+
+管理员批量基线导入：POST /api/admin/configs/import-standards 接收 JSON 数组，每项包含 up_name 和五个维度的升序五元素数组；重复 UP、非法值会整批拒绝。返回 imported/created/updated，存在则更新并记录操作者。导入后下一次同步将按配置变化重算，也可执行 `python -m app.scoring.task` 立即计算。Dashboard 无评分时返回 null，按发布日期降序。

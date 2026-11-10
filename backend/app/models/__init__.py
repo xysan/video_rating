@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from decimal import Decimal
 
-from sqlalchemy import JSON, Boolean, Date, DateTime, Enum, ForeignKey, Integer, Numeric, String, Text, func
+from sqlalchemy import JSON, Boolean, Date, DateTime, Enum, ForeignKey, Integer, Numeric, String, Text, UniqueConstraint, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -55,7 +55,7 @@ class AlgorithmConfig(Base):
 
 class Score(Base):
     __tablename__ = "scores"
-    __table_args__ = TABLE_OPTIONS.copy()
+    __table_args__ = (UniqueConstraint("video_snapshot_id", "algorithm_version", name="uq_scores_snapshot_version"), TABLE_OPTIONS.copy())
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     video_snapshot_id: Mapped[int] = mapped_column(ForeignKey("video_snapshots.id", name="fk_scores_video_snapshot_id"))
