@@ -2,6 +2,7 @@ from datetime import date, datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select, func
+from typing import Literal
 from sqlalchemy.orm import Session
 
 from app.auth.dependencies import get_current_user, require_admin
@@ -12,7 +13,7 @@ from app.scoring.calculator import parse_metric_value
 from app.sync.bilibili_crawler import get_cached_video
 
 router = APIRouter()
-PUBLIC_FIELDS = ("BV号", "标题", "编导", "播放量", "3s跳出率", "播转粉率", "互动率", "平均播放进度")
+PUBLIC_FIELDS = ("BV号", "标题", "编导", "播放量", "3s跳出率", "播转粉率", "互动率", "平均播放进度", "排行", "制作难度", "时效情况", "投流情况")
 
 
 def query_scores(admin=False):
@@ -25,20 +26,29 @@ def query_scores(admin=False):
     return select(*columns).select_from(VideoSnapshot).outerjoin(latest, (latest.c.rn == 1) & (latest.c.snapshot_id == VideoSnapshot.id)).outerjoin(Score, Score.id == latest.c.score_id)
 
 
-def filtered_rows(session, admin=False, up_name=None, date_from=None, date_to=None, director=None):
+def filtered_rows(session, admin=False, up_name=None, date_from=None, date_to=None, director=None, up_names=None, directors=None, is_published_15_days=False, sort_by="publish_date", sort_order="desc"):
     if date_from and date_to and date_from > date_to:
         raise HTTPException(422, "开始日期不能晚于结束日期")
     query = query_scores(admin)
     if up_name:
         query = query.where(VideoSnapshot.up_name == up_name)
+    if up_names:
+        query = query.where(VideoSnapshot.up_name.in_(up_names))
+    if is_published_15_days:
+        cutoff = datetime.now(timezone(timedelta(hours=8))).date() - timedelta(days=15)
+        query = query.where(VideoSnapshot.publish_date <= cutoff)
     if date_from:
         query = query.where(VideoSnapshot.publish_date >= date_from)
     if date_to:
         query = query.where(VideoSnapshot.publish_date < date_to + timedelta(days=1))
-    rows = session.execute(query.order_by(VideoSnapshot.publish_date.desc(), VideoSnapshot.id.desc())).mappings().all()
+    column = Score.score if sort_by == "total_score" else VideoSnapshot.publish_date
+    order = column.asc() if sort_order == "asc" else column.desc()
+    rows = session.execute(query.order_by(column.is_(None), order, VideoSnapshot.id.desc())).mappings().all()
     # 编导在嵌套 JSON 中，准确解析后筛选再分页，避免误匹配其它原始字段。
     if director:
         rows = [row for row in rows if director == flatten(decode_field(row["编导"]))]
+    if directors:
+        rows = [row for row in rows if flatten(decode_field(row["编导"])) in directors]
     return rows
 
 
@@ -55,6 +65,8 @@ def public_video(row):
             result[target] = parse_metric_value(flatten(raw["fields"].get(name)))
         except (ValueError, TypeError):
             result[target] = None
+    for key, name in {"difficulty":"制作难度", "efficiency":"时效情况", "traffic_ratio":"投流情况", "tags":"排行"}.items():
+        result[key] = flatten(raw["fields"].get(name)) or None
     result["score"] = result["total_score"]
     result["is_high_score"] = row["total_score"] is not None and row["total_score"] > 85
     return result
@@ -70,14 +82,31 @@ def pagination(rows, page, page_size, admin=False):
     return {"items":items,"total":len(rows),"page":page,"page_size":page_size}
 
 
+def score_filters(up_names: list[str] | None = Query(None), directors: list[str] | None = Query(None),
+                  date_from: date | None = None, date_to: date | None = None,
+                  is_published_15_days: bool = False,
+                  sort_by: Literal["publish_date", "total_score"] = "publish_date",
+                  sort_order: Literal["asc", "desc"] = "desc",
+                  up_name: str | None = None, director: str | None = None):
+    return dict(up_names=up_names, directors=directors, date_from=date_from, date_to=date_to,
+                is_published_15_days=is_published_15_days, sort_by=sort_by, sort_order=sort_order,
+                up_name=up_name, director=director)
+
+
 @router.get("/api/member/scores", dependencies=[Depends(get_current_user)])
-def member_scores(page: int=Query(1,ge=1), page_size: int=Query(20,ge=1,le=100), up_name: str|None=None, date_from: date|None=None, date_to: date|None=None, director: str|None=None, session: Session=Depends(get_session)):
-    return pagination(filtered_rows(session,False,up_name,date_from,date_to,director),page,page_size)
+def member_scores(page: int=Query(1,ge=1), page_size: int=Query(20,ge=1,le=100), filters=Depends(score_filters), session: Session=Depends(get_session)):
+    return pagination(filtered_rows(session,False,**filters),page,page_size)
 
 
 @router.get("/api/admin/scores", dependencies=[Depends(require_admin)])
-def admin_scores(page: int=Query(1,ge=1), page_size: int=Query(20,ge=1,le=100), up_name: str|None=None, date_from: date|None=None, date_to: date|None=None, director: str|None=None, session: Session=Depends(get_session)):
-    return pagination(filtered_rows(session,True,up_name,date_from,date_to,director),page,page_size,True)
+def admin_scores(page: int=Query(1,ge=1), page_size: int=Query(20,ge=1,le=100), filters=Depends(score_filters), session: Session=Depends(get_session)):
+    return pagination(filtered_rows(session,True,**filters),page,page_size,True)
+
+
+@router.get("/api/scores/filters", dependencies=[Depends(get_current_user)])
+def available_filters(session: Session=Depends(get_session)):
+    rows=session.execute(select(VideoSnapshot.up_name,field("编导"))).all()
+    return {"up_names":sorted({r[0] for r in rows if r[0]}), "directors":sorted({flatten(decode_field(r[1])) for r in rows if flatten(decode_field(r[1]))})}
 
 
 @router.get("/api/member/dashboard", dependencies=[Depends(get_current_user)])

@@ -66,3 +66,11 @@
   --shadow-high-glow:
     0 0 0 1px rgba(196, 180, 255, 0.4), 0 0 16px rgba(196, 180, 255, 0.28);
 }
+
+:root {
+  --font-code: "Cascadia Code", Consolas, monospace;
+}
+
+:root {
+  --color-picker-panel: rgba(23, 27, 48, 0.96);
+}

@@ -34,7 +34,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
     allow_credentials=False,
-    allow_methods=["GET", "POST", "PUT"],
+    allow_methods=["GET", "POST", "PUT", "DELETE"],
     allow_headers=["*"],
 )
 
@@ -48,3 +48,6 @@ app.include_router(management_router)
 @app.get("/api/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
+
+from app.api.score_management import router as score_management_router
+app.include_router(score_management_router)

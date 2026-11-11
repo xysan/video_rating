@@ -122,6 +122,12 @@ class SyncService:
                         logger.warning("飞书记录跳过 record_id=%s reason=%s", record.get("record_id"), exc)
                         continue
                     existing = session.scalar(select(VideoSnapshot).where(VideoSnapshot.feishu_record_id == values["feishu_record_id"]))
+                    # 保留本地管理员维护的附加属性，避免飞书同步覆盖。
+                    if existing is not None and existing.raw_payload.get("_admin_extras"):
+                        extras = existing.raw_payload["_admin_extras"]
+                        values["raw_payload"]["_admin_extras"] = extras
+                        for metric, name in {"difficulty":"制作难度", "efficiency":"时效情况", "traffic_ratio":"投流情况"}.items():
+                            values["raw_payload"].setdefault("fields", {})[name] = extras.get(metric)
                     if existing is None:
                         session.add(VideoSnapshot(**values, synced_at=utc_now().replace(tzinfo=None)))
                         inserted += 1

@@ -79,7 +79,10 @@ function logout() {
     >
     <main
       class="workspace-content"
-      :class="{ 'dashboard-workspace': route.path.endsWith('/dashboard') }"
+      :class="{
+        'dashboard-workspace': route.path.endsWith('/dashboard'),
+        'data-workspace': /\/(scores|settings|forbidden)$/.test(route.path),
+      }"
     >
       <header class="workspace-header">
         <span

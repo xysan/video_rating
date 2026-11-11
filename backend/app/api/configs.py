@@ -96,3 +96,15 @@ def import_standards(body: list[dict[str, JsonValue]], admin: CurrentUser = Depe
         row.updated_at = datetime.now(timezone.utc).replace(tzinfo=None)
     session.commit()
     return {"imported": len(prepared), "created": created, "updated": updated}
+
+
+@router.delete("/{config_key}", status_code=204)
+def delete_config(config_key: str, session: Session = Depends(get_session)):
+    from app.scoring.calculator import REQUIRED_KEYS
+    if config_key in REQUIRED_KEYS:
+        raise HTTPException(409, "必要算法配置不能删除，请修改其数值")
+    row=session.scalar(select(AlgorithmConfig).where(AlgorithmConfig.config_key==config_key))
+    if row is None:
+        raise HTTPException(404, "配置不存在")
+    session.delete(row)
+    session.commit()
