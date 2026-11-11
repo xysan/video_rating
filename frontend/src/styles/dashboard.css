@@ -533,3 +533,122 @@
     grid-template-columns: repeat(var(--rank-columns, 5), minmax(150px, 1fr));
   }
 }
+
+:fullscreen .sidebar {
+  display: none;
+}
+:fullscreen .workspace-content {
+  margin-left: 0;
+}
+.video-card h3 {
+  white-space: normal;
+  overflow: visible;
+  overflow-wrap: anywhere;
+  flex-shrink: 0;
+}
+.video-card {
+  width: clamp(280px, 22vw, 360px);
+  flex-basis: clamp(280px, 22vw, 360px);
+  max-height: none;
+}
+.video-card-body {
+  overflow-y: auto;
+}
+.video-rail {
+  scroll-snap-type: none;
+}
+.video-card > .video-cover {
+  max-height: 130px;
+}
+
+/* 流体轨道：宽屏增加可见卡片数，窄屏减少，封面保持等比例。 */
+.video-rail {
+  container-type: inline-size;
+}
+.video-card {
+  flex: 0 0 calc((100% - 2 * var(--space-4)) / 3);
+  width: auto;
+  min-width: 0;
+}
+.video-card > .video-cover {
+  aspect-ratio: 16/9;
+  max-height: none;
+}
+.video-card-body {
+  min-width: 0;
+}
+@media (min-width: 110rem) {
+  .video-card {
+    flex-basis: calc((100% - 3 * var(--space-4)) / 4);
+  }
+}
+@media (min-width: 150rem) {
+  .video-card {
+    flex-basis: calc((100% - 4 * var(--space-4)) / 5);
+  }
+}
+@media (max-width: 75rem) {
+  .video-card {
+    flex-basis: calc((100% - var(--space-4)) / 2);
+  }
+}
+@media (max-width: 45rem) {
+  .video-card {
+    flex-basis: 90%;
+  }
+}
+
+.video-card {
+  overflow: hidden;
+  container-type: size;
+}
+.video-card-body {
+  overflow: hidden;
+  flex: 1;
+  gap: clamp(0.15rem, 1cqh, 0.5rem);
+}
+.video-card h3 {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  line-height: 1.4;
+  flex-shrink: 0;
+  font-size: clamp(0.7rem, 3.5cqh, 0.875rem);
+}
+.video-card > .video-cover {
+  height: min(44cqh, 56.25cqw);
+  max-height: 44%;
+  min-height: 0;
+  flex-shrink: 1;
+}
+.video-metrics {
+  gap: clamp(0.15rem, 1cqh, 0.5rem);
+}
+.video-credits {
+  flex-shrink: 0;
+}
+.fullscreen-icon {
+  flex-shrink: 0;
+}
+
+/* 封面优先使用可用高度，文字区保持紧凑且不产生局部滚动。 */
+.rank-card {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+}
+.rank-card .video-cover {
+  min-height: 0;
+}
+.rank-info {
+  padding: var(--space-1) var(--space-3);
+}
+.rank-info strong {
+  font-size: clamp(1.1rem, 1.6vw, 1.6rem);
+}
+.video-card > .video-cover {
+  flex-shrink: 0;
+}
+.video-cover > img {
+  object-position: center;
+}

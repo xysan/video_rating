@@ -1,0 +1,613 @@
+.settings-console {
+  min-width: 0;
+}
+.console-intro {
+  margin-top: 0.5rem;
+  color: var(--color-muted);
+  font-size: var(--text-sm);
+}
+.console-status {
+  padding: 0.5rem 0.85rem;
+  background: var(--color-nav);
+  color: var(--color-brand);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  font-size: var(--text-sm);
+}
+.console-pill {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-self: flex-start;
+  padding: 0.35rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-input);
+}
+.pill-slider {
+  position: absolute;
+  z-index: -1;
+  top: 0.35rem;
+  bottom: 0.35rem;
+  left: 0.35rem;
+  width: calc(50% - 0.35rem);
+  border-radius: var(--radius-pill);
+  background: var(--color-brand);
+  box-shadow: var(--shadow-button);
+  transition: transform 250ms ease;
+}
+.show-users .pill-slider {
+  transform: translateX(100%);
+}
+.console-pill button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  padding: 0.75rem clamp(1rem, 2vw, 2rem);
+  border: 0;
+  background: var(--color-clear);
+  color: var(--color-muted);
+  border-radius: var(--radius-pill);
+  font-weight: 600;
+  transition: color var(--transition);
+}
+.console-pill button[aria-selected="true"] {
+  color: var(--color-on-brand);
+}
+.console-subnav {
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  padding: 0 0.3rem;
+}
+.console-subnav button {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.65rem 0.2rem 0.85rem;
+  border: 0;
+  background: var(--color-clear);
+  color: var(--color-muted);
+  font-size: var(--text-body);
+}
+.console-subnav button[aria-selected="true"] {
+  color: var(--color-brand);
+}
+.console-subnav button[aria-selected="true"]::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  inset-inline: 0;
+  height: 0.15rem;
+  border-radius: var(--radius-pill);
+  background: var(--color-brand);
+}
+.console-subnav button span {
+  padding: 0.1rem 0.45rem;
+  border-radius: var(--radius-pill);
+  background: var(--color-nav);
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+}
+.console-content {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+}
+.console-section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  padding: clamp(1.25rem, 2vw, 2rem);
+  border-bottom: 1px solid var(--color-border);
+  flex: none;
+}
+.console-section-head h2 {
+  font-size: var(--text-intro);
+  font-weight: 600;
+}
+.console-section-head p {
+  margin-top: 0.4rem;
+  font-size: var(--text-sm);
+  color: var(--color-muted);
+}
+.console-section-head .app-button {
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+.console-scroll {
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 0;
+  padding: clamp(1.25rem, 2vw, 2rem);
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-brand) var(--color-input);
+}
+.console-config-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+  gap: 1.5rem;
+  align-items: start;
+}
+.console-card {
+  background: var(--color-input);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-panel);
+  padding: clamp(1.25rem, 2vw, 1.75rem);
+  min-width: 0;
+}
+.console-card > header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+.console-card h3 {
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.config-description {
+  font-size: var(--text-sm);
+  color: var(--color-muted);
+  margin: 0.65rem 0 0;
+  line-height: 1.7;
+}
+.console-icon-button {
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  flex-shrink: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-nav);
+  color: var(--color-brand);
+  font-size: var(--text-lg);
+  transition:
+    background var(--transition),
+    transform var(--transition);
+}
+.console-icon-button:hover:not(:disabled) {
+  background: var(--color-brand);
+  color: var(--color-on-brand);
+  transform: translateY(-0.1rem);
+}
+.console-icon-button:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+.config-values {
+  display: grid;
+  gap: 0.3rem;
+  margin: 1rem 0 0;
+}
+.config-values > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 1rem;
+  padding: 0.65rem 0;
+  border-bottom: 1px solid var(--color-border);
+}
+.config-values > div:last-child {
+  border-bottom: 0;
+}
+.config-values dt {
+  font-size: var(--text-sm);
+  color: var(--color-muted);
+  overflow-wrap: anywhere;
+}
+.config-values dd {
+  margin: 0;
+  text-align: right;
+  color: var(--color-brand);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
+.baseline-list {
+  display: grid;
+  gap: 1.5rem;
+}
+.baseline-card > header {
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid var(--color-border);
+}
+.baseline-card header small {
+  font: 600 var(--text-xs) var(--font-display);
+  letter-spacing: 0.14em;
+  color: var(--color-subtle);
+}
+.baseline-card h3 {
+  margin-top: 0.4rem;
+  font-size: clamp(1rem, 1.5vw, 1.35rem);
+}
+.config-card-actions {
+  display: flex;
+  gap: 0.6rem;
+}
+.baseline-metrics {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 1.25rem;
+}
+.baseline-metrics > section {
+  min-width: 0;
+  padding: 1rem;
+  border-radius: var(--radius-input);
+  background: var(--color-nav);
+}
+.baseline-metrics h4 {
+  margin: 0 0 0.8rem;
+  font-size: var(--text-sm);
+  font-weight: 500;
+}
+.baseline-metrics dl {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0;
+}
+.baseline-metrics dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  font-size: var(--text-sm);
+}
+.baseline-metrics dt {
+  color: var(--color-muted);
+  font-family: var(--font-display);
+}
+.baseline-metrics dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.console-users {
+  display: grid;
+  gap: 1rem;
+}
+.console-user {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+}
+.user-identity {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  min-width: 0;
+  flex: 1;
+}
+.console-avatar {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 2.8rem;
+  aspect-ratio: 1;
+  border-radius: var(--radius-pill);
+  background: var(--color-nav);
+  color: var(--color-brand);
+  font-size: var(--text-intro);
+}
+.user-identity p {
+  color: var(--color-muted);
+  font-size: var(--text-sm);
+  margin-top: 0.3rem;
+  overflow-wrap: anywhere;
+}
+.self-label {
+  margin-left: 0.5rem;
+  font-size: var(--text-xs);
+  color: var(--color-brand);
+}
+.user-role-badge {
+  border: 1px solid var(--color-border);
+  padding: 0.3rem 0.7rem;
+  border-radius: var(--radius-pill);
+  font-size: var(--text-sm);
+  color: var(--color-muted);
+}
+.user-role-badge.is-admin {
+  color: var(--color-brand);
+  background: var(--color-nav);
+}
+.user-role-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-left: auto;
+}
+.role-switch {
+  display: flex;
+  padding: 0.25rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-nav);
+}
+.role-switch button {
+  border: 0;
+  background: var(--color-clear);
+  color: var(--color-muted);
+  border-radius: var(--radius-pill);
+  padding: 0.6rem 0.85rem;
+  font-size: var(--text-sm);
+}
+.role-switch button[aria-pressed="true"] {
+  background: var(--color-brand);
+  color: var(--color-on-brand);
+}
+.role-switch button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+.settings-edit-dialog {
+  width: 90vw;
+  max-width: 62.5rem;
+  max-height: 90dvh;
+}
+.settings-edit-dialog .dialog-content {
+  padding: clamp(1rem, 2.5vw, 2rem);
+}
+.settings-editor-intro {
+  color: var(--color-muted);
+  font-size: var(--text-sm);
+  margin-bottom: 1.5rem;
+}
+.baseline-name {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-bottom: 1.5rem;
+}
+.baseline-name input {
+  width: 100%;
+  min-width: 0;
+}
+.baseline-editor {
+  display: grid;
+  gap: 1.25rem;
+}
+.baseline-editor-row {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-input);
+  padding: 1.2rem;
+  margin: 0;
+  min-width: 0;
+  background: var(--color-nav);
+}
+.baseline-editor-row legend {
+  padding: 0 0.5rem;
+  font-weight: 600;
+  font-size: var(--text-body);
+}
+.baseline-inputs {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+.baseline-inputs label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  color: var(--color-muted);
+  font-size: var(--text-sm);
+  min-width: 0;
+}
+.baseline-inputs input {
+  width: 100%;
+  min-width: 0;
+  color: var(--color-text);
+  background: var(--color-input);
+  padding: 0.7rem;
+  border-radius: var(--radius-small);
+  border: 1px solid var(--color-border);
+  font-variant-numeric: tabular-nums;
+}
+.settings-edit-dialog .rule-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+  padding: 1.25rem;
+  gap: 1rem;
+  min-width: 0;
+}
+.settings-edit-dialog .rule-field {
+  min-width: 0;
+}
+.settings-edit-dialog .rule-field input {
+  width: 100%;
+  min-width: 0;
+}
+.settings-edit-dialog .dialog-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 1.25rem clamp(1rem, 2.5vw, 2rem);
+  border-top: 1px solid var(--color-border);
+  background: var(--color-input);
+  flex: none;
+}
+.settings-save-hint {
+  margin-right: auto;
+  font-size: var(--text-sm);
+  color: var(--color-muted);
+}
+.console-empty {
+  padding: 2rem;
+  text-align: center;
+  color: var(--color-muted);
+  display: grid;
+  justify-items: center;
+  gap: 1rem;
+}
+.console-skeleton {
+  height: 10rem;
+  border-radius: var(--radius-panel);
+  background: linear-gradient(
+    100deg,
+    var(--color-input),
+    var(--color-nav),
+    var(--color-input)
+  );
+  background-size: 200% 100%;
+  animation: console-loading 1.5s linear infinite;
+}
+@keyframes console-loading {
+  to {
+    background-position: 200% 0;
+  }
+}
+@media (max-width: 85rem) {
+  .baseline-metrics {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .console-user {
+    gap: 1rem;
+  }
+}
+@media (max-width: 60rem) {
+  .baseline-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .console-status {
+    display: none;
+  }
+  .user-role-actions {
+    margin-left: 0;
+    width: 100%;
+    justify-content: space-between;
+  }
+  .baseline-inputs {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .settings-console {
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-bottom: 1rem;
+  }
+  .console-content {
+    flex: none;
+    overflow: visible;
+  }
+  .console-scroll {
+    overflow: visible;
+  }
+}
+@media (max-width: 40rem) {
+  .baseline-metrics {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .baseline-inputs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .console-subnav {
+    gap: 1rem;
+  }
+  .console-section-head .app-button {
+    width: 100%;
+  }
+  .settings-save-hint {
+    display: none;
+  }
+  .settings-edit-dialog .dialog-footer .app-button {
+    flex: 1;
+  }
+  .console-pill {
+    align-self: stretch;
+  }
+  .user-role-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .role-switch button {
+    flex: 1;
+  }
+  .role-switch {
+    width: 100%;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pill-slider,
+  .console-icon-button,
+  .console-pill button {
+    transition: none;
+  }
+  .console-skeleton {
+    animation: none;
+  }
+}
+
+.settings-rule-form {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+.console-pill,
+.console-subnav {
+  flex-shrink: 0;
+}
+.user-identity > div {
+  min-width: 0;
+}
+.baseline-card > header {
+  flex-wrap: wrap;
+}
+.console-scroll {
+  overscroll-behavior: contain;
+}
+
+.console-config-grid {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 20rem), 1fr));
+  align-items: stretch;
+}
+.config-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.config-card > header {
+  align-items: flex-start;
+  min-height: 3rem;
+}
+.config-card .config-values {
+  margin-top: 1rem;
+  padding-top: 0;
+}
+.config-card .config-description {
+  margin-bottom: 1rem;
+}
+
+.config-groups {
+  display: grid;
+  gap: var(--space-5);
+}
+.config-group {
+  min-width: 0;
+}
+.config-group-title {
+  margin: 0 0 var(--space-3);
+  color: var(--color-muted);
+  font-size: var(--text-body);
+}
+
+.config-group .console-config-grid {
+  grid-auto-rows: 1fr;
+}
+.config-groups {
+  gap: clamp(2rem, 4vh, 3rem);
+}

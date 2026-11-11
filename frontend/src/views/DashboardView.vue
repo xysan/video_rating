@@ -1,5 +1,12 @@
 <script setup>
-import { computed, ref, onMounted, onBeforeUnmount } from "vue";
+import {
+  computed,
+  ref,
+  watch,
+  nextTick,
+  onMounted,
+  onBeforeUnmount,
+} from "vue";
 import {
   PhArrowClockwise,
   PhArrowLeft,
@@ -7,14 +14,28 @@ import {
   PhPause,
   PhPlay,
   PhTrophy,
+  PhCornersOut,
+  PhCornersIn,
 } from "@phosphor-icons/vue";
 import { api } from "../api/client";
 import GlassPanel from "../components/ui/GlassPanel.vue";
 import AppButton from "../components/ui/AppButton.vue";
 import VideoCard from "../components/dashboard/VideoCard.vue";
 import VideoCover from "../components/dashboard/VideoCover.vue";
-import { scoreOf, titleOf, nextScroll } from "../utils/dashboard";
+import { scoreOf, titleOf } from "../utils/dashboard";
 import "../styles/dashboard.css";
+const fullscreen = ref(false);
+async function toggleFullscreen() {
+  try {
+    if (document.fullscreenElement) await document.exitFullscreen();
+    else await document.documentElement.requestFullscreen();
+  } catch {
+    error.value = "浏览器未允许全屏，请使用浏览器全屏功能";
+  }
+}
+function fullscreenChanged() {
+  fullscreen.value = !!document.fullscreenElement;
+}
 const data = ref({ top_videos: [], videos: [] });
 const loading = ref(true),
   refreshing = ref(false),
@@ -22,7 +43,7 @@ const loading = ref(true),
   updated = ref(null);
 const now = ref(new Date()),
   rail = ref(null),
-  paused = ref(false),
+  paused = ref(true),
   interacting = ref(false),
   reduced = ref(false);
 const dateText = computed(() =>
@@ -43,6 +64,79 @@ const videos = computed(() =>
       (b.id || 0) - (a.id || 0),
   ),
 );
+// 多卡片视口需要克隆整组，避免首尾切换时露出空白。
+const loopGroup = computed(() => {
+  const items = videos.value;
+  if (items.length < 2) return items;
+  return Array.from(
+    { length: Math.max(1, Math.ceil(6 / items.length)) },
+    () => items,
+  ).flat();
+});
+const loopVideos = computed(() =>
+  videos.value.length < 2
+    ? videos.value
+    : [...loopGroup.value, ...loopGroup.value, ...loopGroup.value],
+);
+let settleTimer, resizeObserver;
+function loopGeometry() {
+  const el = rail.value;
+  if (!el || videos.value.length < 2) return null;
+  const count = loopGroup.value.length;
+  const nodes = el.children;
+  if (!nodes[count * 2]) return null;
+  const left = (node) =>
+    node.getBoundingClientRect().left -
+    el.getBoundingClientRect().left +
+    el.scrollLeft;
+  return {
+    start: left(nodes[count]),
+    length: left(nodes[count * 2]) - left(nodes[count]),
+    step: left(nodes[1]) - left(nodes[0]),
+  };
+}
+function normalizeLoop() {
+  const geometry = loopGeometry();
+  if (!geometry) return;
+  const { start, length } = geometry;
+  const offset = rail.value.scrollLeft - start;
+  if (offset < 0 || offset >= length) {
+    rail.value.scrollTo({
+      left: start + (((offset % length) + length) % length),
+      behavior: "instant",
+    });
+  }
+}
+function onRailScroll() {
+  clearTimeout(settleTimer);
+  settleTimer = setTimeout(normalizeLoop, 180);
+}
+function resetAutoplay() {
+  clearInterval(slideTimer);
+  if (!paused.value && videos.value.length > 1) {
+    slideTimer = setInterval(() => {
+      if (!document.hidden && !interacting.value) move(1);
+    }, 7000);
+  }
+}
+watch(paused, resetAutoplay);
+watch(rail, (el) => {
+  resizeObserver?.disconnect();
+  if (el) {
+    resizeObserver = new ResizeObserver(() => {
+      const geometry = loopGeometry();
+      if (geometry) el.scrollTo({ left: geometry.start, behavior: "instant" });
+    });
+    resizeObserver.observe(el);
+  }
+});
+watch(videos, async () => {
+  await nextTick();
+  const geometry = loopGeometry();
+  if (geometry)
+    rail.value.scrollTo({ left: geometry.start, behavior: "instant" });
+  resetAutoplay();
+});
 let controller, clockTimer, refreshTimer, slideTimer, motion;
 async function refresh() {
   if (refreshing.value) return;
@@ -73,19 +167,19 @@ async function refresh() {
 function move(direction) {
   const el = rail.value;
   if (!el) return;
+  normalizeLoop();
+  const geometry = loopGeometry();
+  if (!geometry) return;
   el.scrollTo({
-    left: nextScroll(el.scrollLeft, el.scrollWidth, el.clientWidth, direction),
+    left: el.scrollLeft + geometry.step * direction,
     behavior: reduced.value ? "instant" : "smooth",
   });
 }
 function motionChanged(event) {
   reduced.value = event.matches;
 }
-function focusOut(event) {
-  if (!event.currentTarget.contains(event.relatedTarget))
-    interacting.value = false;
-}
 onMounted(() => {
+  document.addEventListener("fullscreenchange", fullscreenChanged);
   motion = window.matchMedia("(prefers-reduced-motion: reduce)");
   reduced.value = motion.matches;
   motion.addEventListener("change", motionChanged);
@@ -96,18 +190,12 @@ onMounted(() => {
   refreshTimer = setInterval(() => {
     if (!document.hidden) refresh();
   }, 60000);
-  slideTimer = setInterval(() => {
-    if (
-      !paused.value &&
-      !interacting.value &&
-      !reduced.value &&
-      !document.hidden
-    )
-      move(1);
-  }, 7000);
 });
 onBeforeUnmount(() => {
   controller?.abort();
+  clearTimeout(settleTimer);
+  resizeObserver?.disconnect();
+  document.removeEventListener("fullscreenchange", fullscreenChanged);
   [clockTimer, refreshTimer, slideTimer].forEach(clearInterval);
   motion?.removeEventListener("change", motionChanged);
 });
@@ -120,6 +208,15 @@ onBeforeUnmount(() => {
         <h1>数据看板<span>每一份创作，都值得被看见。</span></h1>
       </div>
       <div class="dashboard-tools">
+        <button
+          type="button"
+          class="rail-button fullscreen-icon"
+          :title="fullscreen ? '退出全屏' : '全屏'"
+          :aria-label="fullscreen ? '退出全屏' : '全屏'"
+          @click="toggleFullscreen"
+        >
+          <PhCornersIn v-if="fullscreen" /><PhCornersOut v-else />
+        </button>
         <time :datetime="now.toISOString()">{{ dateText }}</time
         ><AppButton
           variant="secondary"
@@ -140,7 +237,9 @@ onBeforeUnmount(() => {
         <header class="section-heading">
           <div>
             <span class="section-kicker">THE TOP FIVE</span>
-            <h2 id="ranking-title"><PhTrophy aria-hidden="true" />高光作品</h2>
+            <h2 id="ranking-title">
+              <PhTrophy aria-hidden="true" />近30天高光作品
+            </h2>
           </div>
           <span class="section-note">近 30 天 · 综合得分排名</span>
         </header>
@@ -190,7 +289,7 @@ onBeforeUnmount(() => {
           <div>
             <span class="section-kicker">LATEST RELEASES</span>
             <h2 id="video-title">
-              创作轨迹
+              近30天发布视频一览
               <span class="video-total"
                 >{{ loading ? "—" : videos.length }} 部</span
               >
@@ -200,12 +299,12 @@ onBeforeUnmount(() => {
             <span class="section-note">最新发布在前 · 横向浏览</span
             ><button
               class="rail-button"
-              :disabled="videos.length < 2 || reduced"
-              :aria-label="paused || reduced ? '开启自动轮播' : '暂停自动轮播'"
-              :aria-pressed="!paused && !reduced"
+              :disabled="videos.length < 2"
+              :aria-label="paused ? '开启自动轮播' : '暂停自动轮播'"
+              :aria-pressed="!paused"
               @click="paused = !paused"
             >
-              <PhPlay v-if="paused || reduced" /><PhPause v-else /></button
+              <PhPlay v-if="paused" /><PhPause v-else /></button
             ><button
               class="rail-button"
               aria-label="上一组视频"
@@ -235,17 +334,19 @@ onBeforeUnmount(() => {
           aria-label="近30天视频，使用左右方向键浏览"
           @mouseenter="interacting = true"
           @mouseleave="interacting = false"
-          @focusin="interacting = true"
-          @focusout="focusOut"
+          @scroll.passive="onRailScroll"
+          @scrollend="normalizeLoop"
           @touchstart.passive="paused = true"
           @wheel.passive="paused = true"
           @keydown.left.prevent="move(-1)"
           @keydown.right.prevent="move(1)"
         >
           <VideoCard
-            v-for="video in videos"
-            :key="
-              video.id ?? video.bv_id ?? `${video.up_name}-${video.video_title}`
+            v-for="(video, index) in loopVideos"
+            :key="index"
+            :aria-hidden="
+              videos.length > 1 &&
+              (index < loopGroup.length || index >= loopGroup.length * 2)
             "
             :video="video"
           />

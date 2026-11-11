@@ -45,6 +45,7 @@ def extract_metrics(raw_payload, fields):
     source = raw_payload.get("fields", {})
     result = {}
     for metric, field in fields.items():
+        field = field or {"difficulty":"制作难度", "efficiency":"时效情况", "traffic_ratio":"投流情况"}.get(metric)
         value = unwrap(source.get(field), multiple=metric == "tags") if field else None
         if metric in ("difficulty", "efficiency", "tags"):
             if metric != "tags" and value is not None and not isinstance(value, str):
@@ -54,6 +55,7 @@ def extract_metrics(raw_payload, fields):
             result[metric] = value
         else:
             result[metric] = parse_metric_value(value)
+    result.update(raw_payload.get("_admin_extras", {}))
     return result
 
 

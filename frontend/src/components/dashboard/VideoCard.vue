@@ -73,8 +73,8 @@ const metrics = [
           video.up_name || "未知 UP 主"
         }}</strong
         ><span v-if="video.director" :title="video.director"
-          >编导 · {{ video.director }}</span
-        ><span v-else>编导未填写</span>
+          >编导： {{ video.director }}</span
+        >
       </footer>
     </div>
   </GlassPanel>
