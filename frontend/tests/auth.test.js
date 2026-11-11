@@ -44,7 +44,7 @@ describe("登录会话与权限导航", () => {
     setToken("test-token");
     session.user = { role: "member" };
     await router.push("/admin/settings");
-    expect(router.currentRoute.value.path).toBe("/member/dashboard");
+    expect(router.currentRoute.value.path).toBe("/forbidden");
     await router.push("/member/scores");
     expect(router.currentRoute.value.path).toBe("/member/scores");
   });

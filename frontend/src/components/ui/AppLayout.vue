@@ -77,7 +77,13 @@ function logout() {
         </button>
       </div></GlassPanel
     >
-    <main class="workspace-content">
+    <main
+      class="workspace-content"
+      :class="{
+        'dashboard-workspace': route.path.endsWith('/dashboard'),
+        'data-workspace': /\/(scores|settings|forbidden)$/.test(route.path),
+      }"
+    >
       <header class="workspace-header">
         <span
           >工作空间 <span class="breadcrumb-separator">/</span>
