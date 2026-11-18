@@ -41,3 +41,19 @@ def test_multiselect_age_sort_and_exports(client_db):
   if format=='csv':assert '播放得分' in response.text
   else:assert response.content.startswith(b'PK')
  role('member');assert c.get('/api/admin/scores/export').status_code==403
+
+
+def test_global_scope(client_db):
+ c,_,factory=client_db;role('admin')
+ from datetime import date
+ with factory() as session:
+  session.get(VideoSnapshot,1).publish_date=date(2026,9,30)
+  session.get(VideoSnapshot,2).up_name="善良的诚哥"
+  session.add(AlgorithmConfig(config_key="up_standards_善良的诚哥",config_value="{}"))
+  session.commit()
+ for path in ['/api/admin/scores','/api/member/scores']:
+  data=c.get(path).json();assert data['total']==5
+  assert {1,2}.isdisjoint({v['id'] for v in data['items']})
+ assert "善良的诚哥" not in c.get('/api/scores/filters').text
+ assert "善良的诚哥" not in c.get('/api/admin/configs').text
+ assert {1,2}.isdisjoint({v['id'] for v in c.get('/api/member/dashboard').json()['videos']})

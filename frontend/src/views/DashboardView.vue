@@ -25,6 +25,8 @@ import VideoCover from "../components/dashboard/VideoCover.vue";
 import { scoreOf, titleOf } from "../utils/dashboard";
 import "../styles/dashboard.css";
 const fullscreen = ref(false);
+const activeRank = ref(0);
+let rankTimer;
 async function toggleFullscreen() {
   try {
     if (document.fullscreenElement) await document.exitFullscreen();
@@ -179,6 +181,7 @@ function motionChanged(event) {
   reduced.value = event.matches;
 }
 onMounted(() => {
+  rankTimer = setInterval(() => { if (top.value.length) activeRank.value = (activeRank.value + 1) % top.value.length; }, 4000);
   document.addEventListener("fullscreenchange", fullscreenChanged);
   motion = window.matchMedia("(prefers-reduced-motion: reduce)");
   reduced.value = motion.matches;
@@ -192,6 +195,7 @@ onMounted(() => {
   }, 60000);
 });
 onBeforeUnmount(() => {
+  clearInterval(rankTimer);
   controller?.abort();
   clearTimeout(settleTimer);
   resizeObserver?.disconnect();
@@ -257,7 +261,7 @@ onBeforeUnmount(() => {
             v-for="(video, index) in top"
             :key="`${video.up_name}-${video.video_title || video.title}`"
             class="rank-card"
-            :class="`rank-${index + 1}`"
+            :class="[`rank-${index + 1}`, { 'rank-active': activeRank === index }]"
           >
             <VideoCover :src="video.cover_url" :alt="titleOf(video)"
               ><span class="rank-number">{{
@@ -265,6 +269,7 @@ onBeforeUnmount(() => {
               }}</span></VideoCover
             >
             <div class="rank-info">
+              <div class="rank-stats"><span>播放 {{ video.play_count ?? "—" }}</span><span>互动 {{ video.interact_rate == null ? "—" : (video.interact_rate * 100).toFixed(2)+"%" }}</span><span>评论 {{ video.comment_count ?? "—" }}</span><span>投币 {{ video.coin_count ?? "—" }}</span><span>点赞 {{ video.like_count ?? "—" }}</span></div>
               <h3 :title="titleOf(video)">{{ titleOf(video) }}</h3>
               <div>
                 <span :title="video.up_name">{{ video.up_name }}</span
@@ -358,7 +363,7 @@ onBeforeUnmount(() => {
       </section>
     </div>
     <footer class="dashboard-footnote">
-      <span>近 30 天发布 · 发布满 15 天后计算得分</span
+      <span>近 30 天发布 · 发布满 15 天后得出最终评分</span
       ><span
         >{{
           updated

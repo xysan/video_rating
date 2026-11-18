@@ -1,4 +1,7 @@
 from contextlib import asynccontextmanager
+from apscheduler.schedulers.background import BackgroundScheduler
+from app.scoring.task import sync_and_calculate
+import logging
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -22,9 +25,28 @@ async def lifespan(app):
     cache_service = BilibiliCacheService(SessionLocal)
     if settings.BILIBILI_CACHE_ENABLED:
         cache_service.start()
+    scheduler = BackgroundScheduler(timezone="Asia/Shanghai")
+    def daily_score():
+        try:
+            sync_and_calculate(SessionLocal)
+        except Exception:
+            logging.getLogger(__name__).exception("每日评分失败")
+    scheduler.add_job(daily_score, "cron", hour=2, minute=30, id="daily_scoring", max_instances=1, coalesce=True)
+    def refresh_highlights():
+        from datetime import datetime
+        from zoneinfo import ZoneInfo
+        from app.api.scores import weekly_highlights
+        try:
+            with SessionLocal() as session:
+                weekly_highlights(session, datetime.now(ZoneInfo("Asia/Shanghai")).date())
+        except Exception:
+            logging.getLogger(__name__).exception("每周高光刷新失败")
+    scheduler.add_job(refresh_highlights, "cron", day_of_week="mon", hour=3, id="weekly_highlights", max_instances=1, coalesce=True)
+    scheduler.start()
     try:
         yield
     finally:
+        scheduler.shutdown(wait=True)
         cache_service.close()
         service.close()
 

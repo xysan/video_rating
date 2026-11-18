@@ -65,27 +65,25 @@ def test_task_updates_and_missing_baseline(database):
         session.scalar(select(AlgorithmConfig).where(AlgorithmConfig.config_key=="metric_fields")).config_value=json.dumps(fields)
         session.add_all([VideoSnapshot(feishu_record_id=name,up_name="测试UP",video_title=name,publish_date=published,raw_payload={"fields":VIDEO},last_modified_at=now.replace(tzinfo=None)) for name,published in [("eligible",date(2026,10,26)),("young",date(2026,10,27))]])
         session.commit()
-    assert sync_and_calculate(factory,now)["skipped"] == 1
+    assert sync_and_calculate(factory,now)["skipped"] == 2
     with factory() as session:
-        assert session.scalar(select(Score)) is None
         session.add(AlgorithmConfig(config_key="up_standards_测试UP",config_value=json.dumps(STANDARDS)))
         session.commit()
-    assert sync_and_calculate(factory,now)["calculated"] == 1
-    assert sync_and_calculate(factory,now)["unchanged"] == 1
+    assert sync_and_calculate(factory,now)["calculated"] == 2
+    assert sync_and_calculate(factory,now)["unchanged"] == 2
     with factory() as session:
-        score=session.scalar(select(Score));score_id=score.id
-        assert float(score.score)==72
-        video=session.scalar(select(VideoSnapshot).where(VideoSnapshot.feishu_record_id=="eligible"))
-        video.raw_payload={"fields":{**VIDEO,"tags":["每周必看"]}}
+        for video in session.scalars(select(VideoSnapshot)):
+            video.raw_payload={"fields":{**VIDEO,"tags":["每周必看"]}}
         session.commit()
-    assert sync_and_calculate(factory,now)["calculated"] == 1
+    from datetime import timedelta
+    assert sync_and_calculate(factory,now+timedelta(days=1))["calculated"] == 1
     with factory() as session:
-        rows=session.scalars(select(Score)).all()
-        assert len(rows)==1 and rows[0].id==score_id
-        assert float(rows[0].score)==77
+        rows=session.scalars(select(Score).order_by(Score.video_snapshot_id)).all()
+        assert [float(row.score) for row in rows] == [72,77]
+        assert all(row.score_detail["calculation"]["finalized"] for row in rows)
         session.scalar(select(AlgorithmConfig).where(AlgorithmConfig.config_key=="weight_play")).config_value="0.5"
         session.commit()
-    assert sync_and_calculate(factory,now)["calculated"] == 1
+    assert sync_and_calculate(factory,now+timedelta(days=2))["unchanged"] == 2
 
 
 def test_admin_config_permissions(database):

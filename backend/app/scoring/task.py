@@ -8,6 +8,7 @@ from threading import Lock
 from sqlalchemy import select
 
 from app.database import SessionLocal
+from app.video_scope import video_scope
 from app.models import AlgorithmConfig, Score, VideoSnapshot
 from app.scoring.calculator import ConfigurationError, REQUIRED_KEYS, calculate_video_score, parse_metric_value, validate_rules, validate_standards
 from app.scoring.configuration import load_configs
@@ -71,7 +72,7 @@ def sync_and_calculate(session_factory=SessionLocal, now=None, algorithm_version
             validate_rules(configs)
             rules = {key: configs[key] for key in REQUIRED_KEYS}
             cutoff = (now.astimezone(timezone(timedelta(hours=8))) - timedelta(days=rules["calculation_age_days"])).date()
-            videos = session.scalars(select(VideoSnapshot).where(VideoSnapshot.publish_date <= cutoff)).all()
+            videos = session.scalars(select(VideoSnapshot).where(*video_scope(), VideoSnapshot.publish_date <= now.astimezone(timezone(timedelta(hours=8))).date())).all()
             for video in videos:
                 key = "up_standards_" + video.up_name
                 standards = configs.get(key)
@@ -85,7 +86,10 @@ def sync_and_calculate(session_factory=SessionLocal, now=None, algorithm_version
                     config_hash = fingerprint({"rules": rules, "standards": standards})
                     existing = session.scalar(select(Score).where(Score.video_snapshot_id == video.id, Score.algorithm_version == algorithm_version))
                     meta = (existing.score_detail or {}).get("calculation", {}) if existing else {}
-                    if meta.get("input_hash") == input_hash and meta.get("config_hash") == config_hash:
+                    if meta.get("finalized") or (existing and not meta.get("daily_scoring") and video.publish_date <= cutoff):
+                        summary["unchanged"] += 1
+                        continue
+                    if existing and existing.calculated_at.date() == now.astimezone(timezone.utc).date():
                         summary["unchanged"] += 1
                         continue
                     metrics = extract_metrics(video.raw_payload, rules["metric_fields"])
@@ -96,7 +100,7 @@ def sync_and_calculate(session_factory=SessionLocal, now=None, algorithm_version
                         existing = Score(video_snapshot_id=video.id, algorithm_version=algorithm_version)
                         session.add(existing)
                     existing.score = Decimal(str(result["final_score"]))
-                    existing.score_detail = {**result, "calculation": {"input_hash": input_hash, "config_hash": config_hash, "rules": rules, "standards": standards, "metrics": metrics}}
+                    existing.score_detail = {**result, "calculation": {"daily_scoring": True, "finalized": video.publish_date <= cutoff, "input_hash": input_hash, "config_hash": config_hash, "rules": rules, "standards": standards, "metrics": metrics}}
                     existing.calculated_at = now.astimezone(timezone.utc).replace(tzinfo=None)
                     summary["calculated"] += 1
                 except (ValueError, TypeError, OverflowError) as exc:

@@ -137,14 +137,7 @@ class SyncService:
                         existing.synced_at = utc_now().replace(tzinfo=None)
                         updated += 1
             success = True
-            try:
-                from app.scoring.task import sync_and_calculate
-                scoring = sync_and_calculate(self.session_factory)
-            except Exception as exc:
-                from app.scoring.calculator import ConfigurationError
-                reason = str(exc) if isinstance(exc, ConfigurationError) else type(exc).__name__
-                scoring = {"status": "error", "message": reason}
-                logger.error("同步已完成但评分失败 reason=%s", reason)
+            scoring = {"status": "scheduled", "message": "由每日评分任务计算"}
         except Exception as exc:
             # 任务边界捕获异常并记录失败，调度线程继续运行；事务自动回滚。
             error = str(exc) if isinstance(exc, FeishuError) else (f"ValueError: {exc}" if isinstance(exc, ValueError) else f"{type(exc).__name__}: 同步解析或数据库写入失败")

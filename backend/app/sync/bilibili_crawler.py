@@ -12,6 +12,8 @@ from sqlalchemy import select
 from app.api.video_data import extract_bv
 from app.models import VideoSnapshot
 
+from app.video_scope import video_scope
+
 VIDEO_CACHE = {}
 _cache_lock = Lock()
 logger = logging.getLogger(__name__)
@@ -69,7 +71,7 @@ class BilibiliCacheService:
             return
         try:
             with self.session_factory() as session:
-                ids = {extract_bv(raw) for raw in session.scalars(select(VideoSnapshot.raw_payload))}
+                ids = {extract_bv(raw) for raw in session.scalars(select(VideoSnapshot.raw_payload).where(*video_scope()))}
             ids.discard(None)
             results = crawl_videos(ids)
             # 每轮替换，失败或已删除视频不会无限展示旧缓存。
@@ -83,7 +85,7 @@ class BilibiliCacheService:
             self.refresh_lock.release()
 
     def start(self):
-        self.scheduler.add_job(self.refresh, "interval", minutes=15, next_run_time=datetime.now(timezone.utc), max_instances=1, coalesce=True)
+        self.scheduler.add_job(self.refresh, "interval", days=1, next_run_time=datetime.now(timezone.utc), max_instances=1, coalesce=True)
         self.scheduler.start()
 
     def close(self):

@@ -503,3 +503,11 @@
   margin: 0 0 var(--space-2);
   overflow-wrap: anywhere;
 }
+
+.workspace-content.data-workspace{overflow-y:auto}
+.data-workspace .data-page{flex:none;min-height:auto}
+.data-workspace .console-content,.data-workspace .console-scroll{overflow:visible;flex:none}
+.data-workspace .settings-console{overflow:visible}
+.data-workspace .table-panel{flex:none}
+.score-toolbar{padding:var(--space-3)!important;gap:var(--space-2)!important}
+.score-toolbar-actions{padding-top:var(--space-2)!important}

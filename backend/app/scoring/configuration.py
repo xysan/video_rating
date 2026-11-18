@@ -8,7 +8,7 @@ from app.scoring.calculator import ConfigurationError, REQUIRED_KEYS, validate_r
 
 def load_configs(session):
     result = {}
-    for key, value in session.execute(select(AlgorithmConfig.config_key, AlgorithmConfig.config_value)):
+    for key, value in session.execute(select(AlgorithmConfig.config_key, AlgorithmConfig.config_value).where(AlgorithmConfig.config_key != "up_standards_善良的诚哥")):
         try:
             result[key] = json.loads(value)
         except (ValueError, TypeError):
