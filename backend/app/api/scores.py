@@ -28,6 +28,11 @@ def query_scores(admin=False):
     return select(*columns).select_from(VideoSnapshot).outerjoin(latest, (latest.c.rn == 1) & (latest.c.snapshot_id == VideoSnapshot.id)).outerjoin(Score, Score.id == latest.c.score_id).where(*video_scope())
 
 
+def director_label(value):
+    # 展示别名同时用于筛选匹配，数据库保留原姓名。
+    return "tt" if value == "顾抒桐" else value
+
+
 def filtered_rows(session, admin=False, up_name=None, date_from=None, date_to=None, director=None, up_names=None, directors=None, is_published_15_days=False, sort_by="publish_date", sort_order="desc"):
     if date_from and date_to and date_from > date_to:
         raise HTTPException(422, "开始日期不能晚于结束日期")
@@ -48,9 +53,9 @@ def filtered_rows(session, admin=False, up_name=None, date_from=None, date_to=No
     rows = session.execute(query.order_by(column.is_(None), order, VideoSnapshot.id.desc())).mappings().all()
     # 编导在嵌套 JSON 中，准确解析后筛选再分页，避免误匹配其它原始字段。
     if director:
-        rows = [row for row in rows if director == flatten(decode_field(row["编导"]))]
+        rows = [row for row in rows if director_label(director) == director_label(flatten(decode_field(row["编导"])))]
     if directors:
-        rows = [row for row in rows if flatten(decode_field(row["编导"])) in directors]
+        rows = [row for row in rows if director_label(flatten(decode_field(row["编导"]))) in {director_label(value) for value in directors}]
     return rows
 
 
@@ -108,7 +113,7 @@ def admin_scores(page: int=Query(1,ge=1), page_size: int=Query(20,ge=1,le=100), 
 @router.get("/api/scores/filters", dependencies=[Depends(get_current_user)])
 def available_filters(session: Session=Depends(get_session)):
     rows=session.execute(select(VideoSnapshot.up_name,field("编导")).where(*video_scope())).all()
-    return {"up_names":sorted({r[0] for r in rows if r[0]}), "directors":sorted({flatten(decode_field(r[1])) for r in rows if flatten(decode_field(r[1]))})}
+    return {"up_names":sorted({r[0] for r in rows if r[0]}), "directors":sorted({director_label(flatten(decode_field(r[1]))) for r in rows if flatten(decode_field(r[1]))})}
 
 
 @router.get("/api/member/dashboard", dependencies=[Depends(get_current_user)])
@@ -122,7 +127,7 @@ def dashboard(session: Session=Depends(get_session)):
     return {"top_videos":top,"videos":cards}
 
 
-def weekly_highlights(session, today):
+def weekly_highlights(session, today, force=False):
     # 缓存在现有配置表中持久化，避免服务重启导致周榜重新排名。
     import json
     from app.models import AlgorithmConfig
@@ -130,7 +135,7 @@ def weekly_highlights(session, today):
     key="system_weekly_highlights"
     cached=session.scalar(select(AlgorithmConfig).where(AlgorithmConfig.config_key==key))
     payload=json.loads(cached.config_value) if cached else {}
-    if payload.get("week") != week:
+    if force or payload.get("week") != week:
         rows=filtered_rows(session,date_from=today-timedelta(days=29),date_to=today-timedelta(days=15))
         eligible=[public_video(row) for row in rows if row["total_score"] is not None]
         winners=sorted(eligible,key=lambda v:(v["score"],v["id"]),reverse=True)[:5]

@@ -15,6 +15,8 @@ from app.api.scores import router as scores_router
 from app.api.management import router as management_router
 from app.sync.bilibili_crawler import BilibiliCacheService
 from app.sync.task import SyncService
+from app.sync.refresh_all import RefreshService
+from app.api.refresh import router as refresh_router
 
 settings = get_settings()
 @asynccontextmanager
@@ -23,6 +25,8 @@ async def lifespan(app):
     app.state.sync_service = service
     service.start()
     cache_service = BilibiliCacheService(SessionLocal)
+    refresh_service = RefreshService(service, cache_service, SessionLocal)
+    app.state.refresh_service = refresh_service
     if settings.BILIBILI_CACHE_ENABLED:
         cache_service.start()
     scheduler = BackgroundScheduler(timezone="Asia/Shanghai")
@@ -47,6 +51,7 @@ async def lifespan(app):
         yield
     finally:
         scheduler.shutdown(wait=True)
+        refresh_service.close()
         cache_service.close()
         service.close()
 
@@ -62,6 +67,7 @@ app.add_middleware(
 
 app.include_router(auth_router)
 app.include_router(sync_router)
+app.include_router(refresh_router)
 app.include_router(configs_router)
 app.include_router(scores_router)
 app.include_router(management_router)

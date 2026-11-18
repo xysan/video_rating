@@ -4,6 +4,7 @@ import { PhCaretDown, PhX, PhMagnifyingGlass } from "@phosphor-icons/vue";
 const props = defineProps({
   id: { type: String, required: true },
   label: String,
+  displayLabels: { type: Object, default: () => ({}) },
   options: { type: Array, default: () => [] },
   modelValue: { type: Array, default: () => [] },
 });
@@ -14,7 +15,7 @@ const open = ref(false),
   trigger = ref(null);
 const matches = computed(() =>
   props.options.filter((x) =>
-    x.toLocaleLowerCase().includes(query.value.toLocaleLowerCase()),
+    (props.displayLabels[x] || x).toLocaleLowerCase().includes(query.value.toLocaleLowerCase()),
   ),
 );
 function toggle(value) {
@@ -45,7 +46,7 @@ onBeforeUnmount(() => document.removeEventListener("pointerdown", outside));
     <div class="multi-control" :class="{ 'is-open': open }">
       <div v-if="modelValue.length" class="selected-tags">
         <span v-for="value in modelValue" :key="value" class="selection-tag"
-          ><span>{{ value }}</span
+          ><span>{{ displayLabels[value] || value }}</span
           ><button
             type="button"
             :aria-label="'移除' + value"
@@ -94,7 +95,7 @@ onBeforeUnmount(() => document.removeEventListener("pointerdown", outside));
             :checked="modelValue.includes(value)"
             @click.stop
             @change="toggle(value)"
-          /><span>{{ value }}</span></label
+          /><span>{{ displayLabels[value] || value }}</span></label
         >
         <p v-if="!matches.length" class="multi-empty">没有匹配选项</p>
       </div>

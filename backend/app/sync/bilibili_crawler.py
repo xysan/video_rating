@@ -68,7 +68,7 @@ class BilibiliCacheService:
 
     def refresh(self):
         if not self.refresh_lock.acquire(blocking=False):
-            return
+            return {"status": "busy"}
         try:
             with self.session_factory() as session:
                 ids = {extract_bv(raw) for raw in session.scalars(select(VideoSnapshot.raw_payload).where(*video_scope()))}
@@ -79,8 +79,10 @@ class BilibiliCacheService:
                 VIDEO_CACHE.clear()
                 VIDEO_CACHE.update(results)
             logger.info("B站缓存刷新 requested=%s cached=%s", len(ids), len(results))
+            return {"status": "success" if len(ids) == len(results) else "partial_success"}
         except Exception as exc:
             logger.error("B站缓存刷新失败 type=%s", type(exc).__name__)
+            return {"status": "failed"}
         finally:
             self.refresh_lock.release()
 

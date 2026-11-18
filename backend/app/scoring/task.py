@@ -60,7 +60,7 @@ def extract_metrics(raw_payload, fields):
     return result
 
 
-def sync_and_calculate(session_factory=SessionLocal, now=None, algorithm_version="v1.0"):
+def sync_and_calculate(session_factory=SessionLocal, now=None, algorithm_version="v1.0", force_daily=False):
     # 从已同步快照计算；由同步任务提交成功后调用，不重复请求飞书。
     if not calculation_lock.acquire(blocking=False):
         return {"status": "busy"}
@@ -89,7 +89,7 @@ def sync_and_calculate(session_factory=SessionLocal, now=None, algorithm_version
                     if meta.get("finalized") or (existing and not meta.get("daily_scoring") and video.publish_date <= cutoff):
                         summary["unchanged"] += 1
                         continue
-                    if existing and existing.calculated_at.date() == now.astimezone(timezone.utc).date():
+                    if not force_daily and existing and existing.calculated_at.date() == now.astimezone(timezone.utc).date():
                         summary["unchanged"] += 1
                         continue
                     metrics = extract_metrics(video.raw_payload, rules["metric_fields"])

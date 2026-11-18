@@ -36,10 +36,9 @@ const extras = reactive({
   efficiency: null,
   traffic_ratio: null,
 });
-api
-  .get("/api/scores/filters")
-  .then((r) => (options.value = r.data))
-  .catch((e) => toast(errorMessage(e, "筛选项加载失败"), "error"));
+api.get("/api/scores/filters")
+  .then(({ data }) => { options.value = data; })
+  .catch(error => toast(errorMessage(error, "筛选项加载失败"), "error"));
 const filters = reactive(blank());
 let applied = blank(),
   controller,

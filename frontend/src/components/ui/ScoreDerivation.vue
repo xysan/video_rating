@@ -270,4 +270,14 @@ const adjustments = computed(() => props.video.score_detail?.bonus_and_penalty);
 .derivation-card footer strong{color:var(--color-text);display:inline-block}
 .derivation-card h4,.derivation-baseline h4,.derivation-summary h4{font-size:var(--text-intro)}
 .derivation-summary{background:var(--color-nav)}
+
+.derivation-card header > strong,
+.derivation-card footer strong,
+.derivation-summary strong {
+  font-family:var(--font-display);
+  font-size:var(--text-heading);
+  font-weight:600;
+  line-height:1.1;
+  font-variant-numeric:tabular-nums;
+}
 </style>
