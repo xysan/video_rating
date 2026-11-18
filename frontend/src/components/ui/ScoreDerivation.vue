@@ -1,6 +1,6 @@
 <script setup>
 import { computed } from "vue";
-import { deriveMetric, numberText } from "../../utils/scoreDerivation";
+import { deriveMetric, numberText, percentText } from "../../utils/scoreDerivation";
 const props = defineProps({ video: { type: Object, required: true } });
 const names = {
   play: "播放量",
@@ -29,7 +29,7 @@ const adjustments = computed(() => props.video.score_detail?.bonus_and_penalty);
       <header>
         <span class="eyebrow">01 / BASELINE</span>
         <h3>UP主基线 · {{ video.up_name }}</h3>
-        <p>本次评分采用的基线快照；比例指标以小数展示，播放量单位为次。</p>
+        <p>本次评分采用的基线快照；比例指标以百分数展示，播放量单位为次。</p>
       </header>
       <div class="derivation-baselines">
         <article
@@ -41,7 +41,7 @@ const adjustments = computed(() => props.video.score_detail?.bonus_and_penalty);
           <dl>
             <div v-for="(percentile, index) in percentiles" :key="percentile">
               <dt>{{ percentile }}</dt>
-              <dd>{{ numberText(snapshot?.standards?.[key]?.[index]) }}</dd>
+              <dd>{{ key === "play" ? numberText(snapshot?.standards?.[key]?.[index]) : percentText(snapshot?.standards?.[key]?.[index]) }}</dd>
             </div>
           </dl>
         </article>
@@ -76,7 +76,7 @@ const adjustments = computed(() => props.video.score_detail?.bonus_and_penalty);
             <p>{{ item.substitution }}</p>
           </div>
           <footer v-if="item.weight != null && item.score != null">
-            加权贡献 <b>{{ numberText(item.weight) }}</b> ×
+            加权贡献 <b>{{ percentText(item.weight) }}</b> ×
             <b>{{ numberText(item.score) }}</b> ≈
             <strong>{{ numberText(item.weight * item.score, 2) }} 分</strong>
           </footer>
@@ -93,7 +93,7 @@ const adjustments = computed(() => props.video.score_detail?.bonus_and_penalty);
           · 榜单加分：<b>{{ numberText(adjustments?.ranking_bonus) }}</b> 分
         </p>
         <p>
-          投流比例：{{ numberText(snapshot?.metrics?.traffic_ratio) }} ·
+          投流比例：{{ percentText(snapshot?.metrics?.traffic_ratio) }} ·
           投流扣分：<b>{{ numberText(adjustments?.traffic_penalty) }}</b>
           分（带符号）
         </p>
@@ -261,5 +261,23 @@ const adjustments = computed(() => props.video.score_detail?.bonus_and_penalty);
   .derivation-grid {
     grid-template-columns: minmax(0, 1fr);
   }
+}
+
+.derivation-grid{grid-template-columns:minmax(0,1fr)}
+.derivation-card header{display:grid;grid-template-columns:minmax(0,1fr) auto}
+.derivation-card header>strong,.derivation-card footer strong,.derivation-summary strong{font-size:var(--text-heading)}
+.derivation-card footer{text-align:right;font-size:var(--text-body);color:var(--color-muted)}
+.derivation-card footer strong{color:var(--color-text);display:inline-block}
+.derivation-card h4,.derivation-baseline h4,.derivation-summary h4{font-size:var(--text-intro)}
+.derivation-summary{background:var(--color-nav)}
+
+.derivation-card header > strong,
+.derivation-card footer strong,
+.derivation-summary strong {
+  font-family:var(--font-display);
+  font-size:var(--text-heading);
+  font-weight:600;
+  line-height:1.1;
+  font-variant-numeric:tabular-nums;
 }
 </style>

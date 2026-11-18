@@ -1,3 +1,4 @@
+export const percentText = value => value == null ? "—" : (Number(value) * 100).toFixed(2) + "%";
 export function numberText(value, digits = 6) {
   if (value == null || value === "" || !Number.isFinite(Number(value)))
     return "—";
@@ -43,23 +44,24 @@ export function deriveMetric(key, detail) {
     points.length !== 5
   )
     return result;
+  const metricText = value => key === "play" ? numberText(value) : percentText(value);
   const reverse = key === "jump_3s";
   const nodes = standards.map((value, i) => ({
     value,
     name: ["P10", "P25", "P50", "P75", "P95"][i],
   }));
   if (reverse) nodes.reverse();
-  result.actual = numberText(x) + (key === "play" ? " 次" : "（比例小数）");
+  result.actual = metricText(x) + (key === "play" ? " 次" : "");
   // 相邻节点相同的优先分支与后端一致，不能按普通插值展示。
   for (let i = 0; i < 4; i++) {
     if (nodes[i].value === nodes[i + 1].value) {
       const first = reverse ? x >= nodes[i].value : x <= nodes[i].value;
-      result.explanation = `${nodes[i].name} 与 ${nodes[i + 1].name} 均为 ${numberText(nodes[i].value)}，优先采用重复节点规则；X ${first ? (reverse ? "≥" : "≤") : reverse ? "<" : ">"} ${numberText(nodes[i].value)}，直接取 ${numberText(points[i + (first ? 0 : 1)])} 分。`;
+      result.explanation = `${nodes[i].name} 与 ${nodes[i + 1].name} 均为 ${metricText(nodes[i].value)}，优先采用重复节点规则；X ${first ? (reverse ? "≥" : "≤") : reverse ? "<" : ">"} ${metricText(nodes[i].value)}，直接取 ${numberText(points[i + (first ? 0 : 1)])} 分。`;
       return result;
     }
   }
   if (reverse ? x >= nodes[0].value : x <= nodes[0].value) {
-    result.explanation = `X ${reverse ? "≥" : "≤"} ${nodes[0].name}（${numberText(nodes[0].value)}），取边界分 ${numberText(points[0])} 分。`;
+    result.explanation = `X ${reverse ? "≥" : "≤"} ${nodes[0].name}（${metricText(nodes[0].value)}），取边界分 ${numberText(points[0])} 分。`;
     return result;
   }
   for (let i = 0; i < 4; i++) {
@@ -67,12 +69,12 @@ export function deriveMetric(key, detail) {
       const a = nodes[i],
         b = nodes[i + 1],
         delta = points[i + 1] - points[i];
-      result.explanation = `实际值 X 落入 ${a.name}（${numberText(a.value)}）与 ${b.name}（${numberText(b.value)}）区间${reverse ? "，按反向指标插值" : ""}。`;
+      result.explanation = `实际值 X 落入 ${a.name}（${metricText(a.value)}）与 ${b.name}（${metricText(b.value)}）区间${reverse ? "，按反向指标插值" : ""}。`;
       result.formula = `${numberText(points[i])} + ${numberText(delta)} × (X − X_${a.name}) ÷ (X_${b.name} − X_${a.name})`;
-      result.substitution = `≈ ${numberText(points[i])} + ${numberText(delta)} × (${numberText(x)} − ${numberText(a.value)}) ÷ (${numberText(b.value)} − ${numberText(a.value)}) = ${numberText(score)} 分`;
+      result.substitution = `≈ ${numberText(points[i])} + ${numberText(delta)} × (${metricText(x)} − ${metricText(a.value)}) ÷ (${metricText(b.value)} − ${metricText(a.value)}) = ${numberText(score)} 分`;
       return result;
     }
   }
-  result.explanation = `X ${reverse ? "<" : ">"} ${nodes[4].name}（${numberText(nodes[4].value)}），取边界分 ${numberText(points[4])} 分。`;
+  result.explanation = `X ${reverse ? "<" : ">"} ${nodes[4].name}（${metricText(nodes[4].value)}），取边界分 ${numberText(points[4])} 分。`;
   return result;
 }

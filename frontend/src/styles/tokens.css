@@ -74,3 +74,5 @@
 :root {
   --color-picker-panel: rgba(23, 27, 48, 0.96);
 }
+
+:root { --color-rank-active: #ffda47; --shadow-rank-active: 0 0 0 2px var(--color-rank-active), 0 0 18px #ffda4740; }

@@ -611,3 +611,5 @@
 .config-groups {
   gap: clamp(2rem, 4vh, 3rem);
 }
+
+.config-group .console-config-grid{grid-auto-rows:auto}

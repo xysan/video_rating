@@ -41,3 +41,38 @@ def test_multiselect_age_sort_and_exports(client_db):
   if format=='csv':assert '播放得分' in response.text
   else:assert response.content.startswith(b'PK')
  role('member');assert c.get('/api/admin/scores/export').status_code==403
+
+
+def test_global_scope(client_db):
+ c,_,factory=client_db;role('admin')
+ from datetime import date
+ with factory() as session:
+  session.get(VideoSnapshot,1).publish_date=date(2026,9,30)
+  session.get(VideoSnapshot,2).up_name="善良的诚哥"
+  session.add(AlgorithmConfig(config_key="up_standards_善良的诚哥",config_value="{}"))
+  session.commit()
+ for path in ['/api/admin/scores','/api/member/scores']:
+  data=c.get(path).json();assert data['total']==5
+  assert {1,2}.isdisjoint({v['id'] for v in data['items']})
+ assert "善良的诚哥" not in c.get('/api/scores/filters').text
+ assert "善良的诚哥" not in c.get('/api/admin/configs').text
+ assert {1,2}.isdisjoint({v['id'] for v in c.get('/api/member/dashboard').json()['videos']})
+
+
+def test_dynamic_filter_alias(client_db):
+ c,_,factory=client_db;role('admin')
+ from datetime import date
+ with factory() as session:
+  first=session.get(VideoSnapshot,1)
+  first.raw_payload={"fields":{"编导":"顾抒桐"}}
+  first.up_name="动态新增UP"
+  second=session.get(VideoSnapshot,2)
+  second.up_name="过期UP";second.publish_date=date(2026,9,30)
+  second.raw_payload={"fields":{"编导":"历史编导"}}
+  session.commit()
+ options=c.get('/api/scores/filters').json()
+ assert '动态新增UP' in options['up_names'] and '过期UP' not in options['up_names']
+ assert 'tt' in options['directors'] and '顾抒桐' not in options['directors'] and '历史编导' not in options['directors']
+ for path in ['/api/admin/scores','/api/member/scores']:
+  response=c.get(path,params={'directors':'tt'}).json()
+  assert response['total']==1 and response['items'][0]['id']==1

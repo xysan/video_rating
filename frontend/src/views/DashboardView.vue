@@ -13,11 +13,12 @@ import {
   PhArrowRight,
   PhPause,
   PhPlay,
-  PhTrophy,
+  PhTrophy, PhHeart, PhCoins, PhChatCircle, PhStar,
   PhCornersOut,
   PhCornersIn,
 } from "@phosphor-icons/vue";
 import { api } from "../api/client";
+import { toast } from "../components/ui/toast";
 import GlassPanel from "../components/ui/GlassPanel.vue";
 import AppButton from "../components/ui/AppButton.vue";
 import VideoCard from "../components/dashboard/VideoCard.vue";
@@ -25,6 +26,8 @@ import VideoCover from "../components/dashboard/VideoCover.vue";
 import { scoreOf, titleOf } from "../utils/dashboard";
 import "../styles/dashboard.css";
 const fullscreen = ref(false);
+const activeRank = ref(0);
+let rankTimer;
 async function toggleFullscreen() {
   try {
     if (document.fullscreenElement) await document.exitFullscreen();
@@ -138,11 +141,20 @@ watch(videos, async () => {
   resetAutoplay();
 });
 let controller, clockTimer, refreshTimer, slideTimer, motion;
-async function refresh() {
+async function refresh(force = false) {
   if (refreshing.value) return;
   refreshing.value = true;
   controller = new AbortController();
   try {
+    let job;
+    if (force === true) {
+      job = (await api.post("/api/refresh-all", {}, { signal: controller.signal })).data;
+      while (job.status === "running") {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        job = (await api.get(`/api/refresh-all/${job.id}`, { signal: controller.signal })).data;
+      }
+      if (job.status === "failed") throw new Error(job.message);
+    }
     const result = await api.get("/api/member/dashboard", {
       signal: controller.signal,
     });
@@ -154,11 +166,14 @@ async function refresh() {
     data.value = result.data;
     updated.value = new Date();
     error.value = "";
+    if (job) toast(job.message, job.status === "success" ? "success" : "warning");
   } catch (err) {
-    if (err.code !== "ERR_CANCELED")
+    if (err.code !== "ERR_CANCELED") {
+      if (force === true) toast("数据同步或更新失败，请稍后重试", "error");
       error.value = updated.value
         ? "刷新失败，正在显示上次成功获取的数据"
         : "暂时无法加载看板，请重试";
+    }
   } finally {
     loading.value = false;
     refreshing.value = false;
@@ -179,6 +194,7 @@ function motionChanged(event) {
   reduced.value = event.matches;
 }
 onMounted(() => {
+  rankTimer = setInterval(() => { if (top.value.length) activeRank.value = (activeRank.value + 1) % top.value.length; }, 4000);
   document.addEventListener("fullscreenchange", fullscreenChanged);
   motion = window.matchMedia("(prefers-reduced-motion: reduce)");
   reduced.value = motion.matches;
@@ -192,6 +208,7 @@ onMounted(() => {
   }, 60000);
 });
 onBeforeUnmount(() => {
+  clearInterval(rankTimer);
   controller?.abort();
   clearTimeout(settleTimer);
   resizeObserver?.disconnect();
@@ -203,10 +220,7 @@ onBeforeUnmount(() => {
 <template>
   <section class="dashboard" :aria-busy="loading">
     <header class="dashboard-heading">
-      <div>
-        <p class="eyebrow">THE CREATIVE PULSE</p>
-        <h1>数据看板<span>每一份创作，都值得被看见。</span></h1>
-      </div>
+      <span class="dashboard-breadcrumb">工作空间 <span class="breadcrumb-separator">/</span> 数据看板</span>
       <div class="dashboard-tools">
         <button
           type="button"
@@ -217,20 +231,21 @@ onBeforeUnmount(() => {
         >
           <PhCornersIn v-if="fullscreen" /><PhCornersOut v-else />
         </button>
-        <time :datetime="now.toISOString()">{{ dateText }}</time
-        ><AppButton
+        <AppButton
           variant="secondary"
           :loading="refreshing"
           class="dashboard-refresh"
           aria-label="刷新看板"
-          @click="refresh"
+          @click="refresh(true)"
           ><PhArrowClockwise v-if="!refreshing" />刷新</AppButton
         >
+        <time :datetime="now.toISOString()">{{ dateText }}</time>
       </div>
+      <span class="workspace-badge">NESTLEHOUSE · TEAM</span>
     </header>
     <p v-if="error" class="dashboard-notice" role="alert">
       {{ error
-      }}<button @click="refresh" :disabled="refreshing">重新加载</button>
+      }}<button @click="refresh(true)" :disabled="refreshing">重新加载</button>
     </p>
     <div class="dashboard-zones">
       <GlassPanel class="leaderboard" aria-labelledby="ranking-title">
@@ -257,15 +272,17 @@ onBeforeUnmount(() => {
             v-for="(video, index) in top"
             :key="`${video.up_name}-${video.video_title || video.title}`"
             class="rank-card"
-            :class="`rank-${index + 1}`"
+            :class="[`rank-${index + 1}`, { 'rank-active': activeRank === index }]"
           >
             <VideoCover :src="video.cover_url" :alt="titleOf(video)"
               ><span class="rank-number">{{
-                String(index + 1).padStart(2, "0")
+                ["🥇", "🥈", "🥉", "④", "⑤"][index]
               }}</span></VideoCover
             >
             <div class="rank-info">
+
               <h3 :title="titleOf(video)">{{ titleOf(video) }}</h3>
+              <div class="rank-stats"><span><PhPlay />{{ video.play_count ?? "—" }}</span><span><PhStar />{{ video.interact_rate == null ? "—" : (video.interact_rate * 100).toFixed(2)+"%" }}</span><span><PhChatCircle />{{ video.comment_count ?? "—" }}</span><span><PhCoins />{{ video.coin_count ?? "—" }}</span><span><PhHeart />{{ video.like_count ?? "—" }}</span></div>
               <div>
                 <span :title="video.up_name">{{ video.up_name }}</span
                 ><strong
@@ -358,14 +375,14 @@ onBeforeUnmount(() => {
       </section>
     </div>
     <footer class="dashboard-footnote">
-      <span>近 30 天发布 · 发布满 15 天后计算得分</span
+      <span>近 30 天发布 · 发布满 15 天后得出最终评分</span
       ><span
         >{{
           updated
             ? `最近更新 ${updated.toLocaleTimeString("zh-CN", { hour12: false })}`
             : "等待数据"
         }}
-        · 每分钟刷新</span
+        · 每天刷新</span
       >
     </footer>
   </section>

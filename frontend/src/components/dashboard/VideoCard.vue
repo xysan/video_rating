@@ -24,10 +24,8 @@ const metrics = [
   ["play_count", "播放", PhPlay],
   ["like_count", "点赞", PhHeart],
   ["coin_count", "投币", PhCoins],
-  ["favorite_count", "收藏", PhStar],
+  ["interact_rate", "互动率", PhStar],
   ["comment_count", "评论", PhChatCircle],
-  ["share_count", "分享", PhShareNetwork],
-  ["danmaku_count", "弹幕", PhChats],
 ];
 </script>
 <template>
@@ -65,7 +63,7 @@ const metrics = [
           <dt>
             <component :is="icon" aria-hidden="true" /><span>{{ label }}</span>
           </dt>
-          <dd>{{ formatCount(video[field]) }}</dd>
+          <dd>{{ field === "interact_rate" ? (video[field] == null ? "—" : (video[field]*100).toFixed(2)+"%") : formatCount(video[field]) }}</dd>
         </div>
       </dl>
       <footer class="video-credits">

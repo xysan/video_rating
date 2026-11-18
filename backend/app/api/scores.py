@@ -12,6 +12,8 @@ from app.api.video_data import field, decode_field, flatten, extract_bv
 from app.scoring.calculator import parse_metric_value
 from app.sync.bilibili_crawler import get_cached_video
 
+from app.video_scope import video_scope
+
 router = APIRouter()
 PUBLIC_FIELDS = ("BV号", "标题", "编导", "播放量", "3s跳出率", "播转粉率", "互动率", "平均播放进度", "排行", "制作难度", "时效情况", "投流情况")
 
@@ -23,7 +25,12 @@ def query_scores(admin=False):
     columns.extend(field(name) for name in PUBLIC_FIELDS)
     if admin:
         columns.extend([Score.score_detail, VideoSnapshot.raw_payload])
-    return select(*columns).select_from(VideoSnapshot).outerjoin(latest, (latest.c.rn == 1) & (latest.c.snapshot_id == VideoSnapshot.id)).outerjoin(Score, Score.id == latest.c.score_id)
+    return select(*columns).select_from(VideoSnapshot).outerjoin(latest, (latest.c.rn == 1) & (latest.c.snapshot_id == VideoSnapshot.id)).outerjoin(Score, Score.id == latest.c.score_id).where(*video_scope())
+
+
+def director_label(value):
+    # 展示别名同时用于筛选匹配，数据库保留原姓名。
+    return "tt" if value == "顾抒桐" else value
 
 
 def filtered_rows(session, admin=False, up_name=None, date_from=None, date_to=None, director=None, up_names=None, directors=None, is_published_15_days=False, sort_by="publish_date", sort_order="desc"):
@@ -46,9 +53,9 @@ def filtered_rows(session, admin=False, up_name=None, date_from=None, date_to=No
     rows = session.execute(query.order_by(column.is_(None), order, VideoSnapshot.id.desc())).mappings().all()
     # 编导在嵌套 JSON 中，准确解析后筛选再分页，避免误匹配其它原始字段。
     if director:
-        rows = [row for row in rows if director == flatten(decode_field(row["编导"]))]
+        rows = [row for row in rows if director_label(director) == director_label(flatten(decode_field(row["编导"])))]
     if directors:
-        rows = [row for row in rows if flatten(decode_field(row["编导"])) in directors]
+        rows = [row for row in rows if director_label(flatten(decode_field(row["编导"]))) in {director_label(value) for value in directors}]
     return rows
 
 
@@ -105,8 +112,8 @@ def admin_scores(page: int=Query(1,ge=1), page_size: int=Query(20,ge=1,le=100), 
 
 @router.get("/api/scores/filters", dependencies=[Depends(get_current_user)])
 def available_filters(session: Session=Depends(get_session)):
-    rows=session.execute(select(VideoSnapshot.up_name,field("编导"))).all()
-    return {"up_names":sorted({r[0] for r in rows if r[0]}), "directors":sorted({flatten(decode_field(r[1])) for r in rows if flatten(decode_field(r[1]))})}
+    rows=session.execute(select(VideoSnapshot.up_name,field("编导")).where(*video_scope())).all()
+    return {"up_names":sorted({r[0] for r in rows if r[0]}), "directors":sorted({director_label(flatten(decode_field(r[1]))) for r in rows if flatten(decode_field(r[1]))})}
 
 
 @router.get("/api/member/dashboard", dependencies=[Depends(get_current_user)])
@@ -114,5 +121,29 @@ def dashboard(session: Session=Depends(get_session)):
     today=datetime.now(timezone(timedelta(hours=8))).date()
     rows=filtered_rows(session,date_from=today-timedelta(days=29),date_to=today)
     cards=[public_video(row) for row in rows]
-    top=sorted((v for v in cards if v["score"] is not None),key=lambda v:(v["score"],v["id"]),reverse=True)[:5]
-    return {"top_videos":[{k:v[k] for k in ("score","up_name","video_title","cover_url","title")} for v in top],"videos":cards}
+    keys=("id","score","total_score","up_name","video_title","cover_url","title","publish_date","director","play_count","interact_rate","comment_count","coin_count","like_count","is_high_score")
+    cards=[{key:v[key] for key in keys} for v in cards]
+    top=weekly_highlights(session, today)
+    return {"top_videos":top,"videos":cards}
+
+
+def weekly_highlights(session, today, force=False):
+    # 缓存在现有配置表中持久化，避免服务重启导致周榜重新排名。
+    import json
+    from app.models import AlgorithmConfig
+    week=(today-timedelta(days=today.weekday())).isoformat()
+    key="system_weekly_highlights"
+    cached=session.scalar(select(AlgorithmConfig).where(AlgorithmConfig.config_key==key))
+    payload=json.loads(cached.config_value) if cached else {}
+    if force or payload.get("week") != week:
+        rows=filtered_rows(session,date_from=today-timedelta(days=29),date_to=today-timedelta(days=15))
+        eligible=[public_video(row) for row in rows if row["total_score"] is not None]
+        winners=sorted(eligible,key=lambda v:(v["score"],v["id"]),reverse=True)[:5]
+        keys=("id","score","up_name","video_title","cover_url","title","publish_date","play_count","interact_rate","comment_count","coin_count","like_count")
+        payload={"week":week,"videos":[{k:v[k] for k in keys} for v in winners]}
+        if cached is None:
+            cached=AlgorithmConfig(config_key=key);session.add(cached)
+        cached.config_value=json.dumps(payload,ensure_ascii=False,default=str)
+        session.commit()
+    # 周内仍遵守滚动30天范围和全局排除规则。
+    return [v for v in payload.get("videos",[]) if v["up_name"] != "善良的诚哥" and str(v["publish_date"]) >= max("2026-10-01",(today-timedelta(days=29)).isoformat())]

@@ -12,6 +12,8 @@ from sqlalchemy import select
 from app.api.video_data import extract_bv
 from app.models import VideoSnapshot
 
+from app.video_scope import video_scope
+
 VIDEO_CACHE = {}
 _cache_lock = Lock()
 logger = logging.getLogger(__name__)
@@ -66,10 +68,10 @@ class BilibiliCacheService:
 
     def refresh(self):
         if not self.refresh_lock.acquire(blocking=False):
-            return
+            return {"status": "busy"}
         try:
             with self.session_factory() as session:
-                ids = {extract_bv(raw) for raw in session.scalars(select(VideoSnapshot.raw_payload))}
+                ids = {extract_bv(raw) for raw in session.scalars(select(VideoSnapshot.raw_payload).where(*video_scope()))}
             ids.discard(None)
             results = crawl_videos(ids)
             # 每轮替换，失败或已删除视频不会无限展示旧缓存。
@@ -77,13 +79,15 @@ class BilibiliCacheService:
                 VIDEO_CACHE.clear()
                 VIDEO_CACHE.update(results)
             logger.info("B站缓存刷新 requested=%s cached=%s", len(ids), len(results))
+            return {"status": "success" if len(ids) == len(results) else "partial_success"}
         except Exception as exc:
             logger.error("B站缓存刷新失败 type=%s", type(exc).__name__)
+            return {"status": "failed"}
         finally:
             self.refresh_lock.release()
 
     def start(self):
-        self.scheduler.add_job(self.refresh, "interval", minutes=15, next_run_time=datetime.now(timezone.utc), max_instances=1, coalesce=True)
+        self.scheduler.add_job(self.refresh, "interval", days=1, next_run_time=datetime.now(timezone.utc), max_instances=1, coalesce=True)
         self.scheduler.start()
 
     def close(self):

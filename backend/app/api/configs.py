@@ -23,7 +23,7 @@ class ConfigUpdate(BaseModel):
 
 @router.get("")
 def list_configs(session: Session = Depends(get_session)):
-    rows = session.execute(select(AlgorithmConfig.config_key, AlgorithmConfig.config_value, AlgorithmConfig.description, AlgorithmConfig.updated_by, AlgorithmConfig.updated_at).order_by(AlgorithmConfig.config_key)).mappings()
+    rows = session.execute(select(AlgorithmConfig.config_key, AlgorithmConfig.config_value, AlgorithmConfig.description, AlgorithmConfig.updated_by, AlgorithmConfig.updated_at).where(AlgorithmConfig.config_key.notin_(["up_standards_善良的诚哥", "system_weekly_highlights"])).order_by(AlgorithmConfig.config_key)).mappings()
     result = []
     for row in rows:
         item = dict(row)

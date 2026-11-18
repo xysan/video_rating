@@ -57,9 +57,9 @@ def test_member_projection_and_dashboard(client_db):
     assert "score_detail" not in r.text and "raw_payload" not in r.text and "secret-marker" not in r.text
     assert all("score_detail" not in q for q in queries)
     data=c.get("/api/member/dashboard").json()
-    assert len(data["top_videos"])==5 and "bv_id" not in data["top_videos"][0]
+    assert data["top_videos"] == []
     assert data["videos"][0]["is_high_score"] is True
-    assert data["videos"][0]["bv_id"]=="BV1234567890"
+    assert "bv_id" not in data["videos"][0]
     for path in ("/api/admin/scores","/api/admin/users","/api/admin/export/csv","/api/admin/configs"):
         assert c.get(path).status_code==403
     assert c.put("/api/admin/users/1/role",json={"role":"admin"}).status_code==403
