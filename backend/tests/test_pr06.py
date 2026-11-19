@@ -111,3 +111,25 @@ def test_dashboard_null_scores_and_date_order(client_db):
     assert all(v["score"] is None for v in data["videos"])
     dates=[v["publish_date"] for v in data["videos"]]
     assert dates==sorted(dates,reverse=True)
+
+
+def test_dashboard_matrix_rate_separate_from_highlights(client_db):
+    c, _, factory = client_db
+    role("member")
+    with factory() as s:
+        video = s.scalar(select(VideoSnapshot).where(VideoSnapshot.feishu_record_id == "0"))
+        video.publish_date = datetime.now(timezone(timedelta(hours=8))).date() - timedelta(days=16)
+        video.raw_payload = {"fields": {**video.raw_payload["fields"], "互动率": "4.76%"}}
+        s.commit()
+    VIDEO_CACHE["BV1234567890"] = dict(play_count=1000, like_count=10, coin_count=20, favorite_count=30, danmaku_count=40, share_count=50, comment_count=60)
+    response = c.get("/api/member/dashboard")
+    assert response.status_code == 200
+    data = response.json()
+    assert all(v["interact_rate"] == pytest.approx(.21) for v in data["videos"])
+    assert data["top_videos"][0]["interact_rate"] == pytest.approx(.0476)
+    VIDEO_CACHE["BV1234567890"]["play_count"] = 0
+    assert all(v["interact_rate"] == 0 for v in c.get("/api/member/dashboard").json()["videos"])
+    VIDEO_CACHE.clear()
+    data = c.get("/api/member/dashboard").json()
+    assert all(v["interact_rate"] is None for v in data["videos"])
+    assert data["top_videos"][0]["interact_rate"] == pytest.approx(.0476)
