@@ -76,3 +76,9 @@
 }
 
 :root { --color-rank-active: #ffda47; --shadow-rank-active: 0 0 0 2px var(--color-rank-active), 0 0 18px #ffda4740; }
+
+:root{--medal-shadow:0 3px 6px rgba(0,0,0,.3)}
+
+:root { --rank-medal-size: 56px; }
+
+:root { --rank-medal-size: 64px; }
