@@ -121,6 +121,12 @@ def dashboard(session: Session=Depends(get_session)):
     today=datetime.now(timezone(timedelta(hours=8))).date()
     rows=filtered_rows(session,date_from=today-timedelta(days=29),date_to=today)
     cards=[public_video(row) for row in rows]
+    # 仅矩阵使用 B 站互动率；高光及评分接口保留飞书指标。
+    for card in cards:
+        play = card["play_count"]
+        counts = [card[key] for key in ("like_count", "coin_count", "favorite_count", "danmaku_count", "share_count", "comment_count")]
+        card["interact_rate"] = (0.0 if play == 0 else
+                                 sum(counts) / play if play is not None and all(value is not None for value in counts) else None)
     keys=("id","score","total_score","up_name","video_title","cover_url","title","publish_date","director","play_count","interact_rate","comment_count","coin_count","like_count","is_high_score")
     cards=[{key:v[key] for key in keys} for v in cards]
     top=weekly_highlights(session, today)

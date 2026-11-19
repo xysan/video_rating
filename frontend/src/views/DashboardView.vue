@@ -25,13 +25,7 @@ import VideoCard from "../components/dashboard/VideoCard.vue";
 import VideoCover from "../components/dashboard/VideoCover.vue";
 import { scoreOf, titleOf } from "../utils/dashboard";
 import "../styles/dashboard.css";
-import medal1 from "../assets/medals/medal-1.png";
-import medal2 from "../assets/medals/medal-2.png";
-import medal3 from "../assets/medals/medal-3.png";
-import medal4 from "../assets/medals/medal-4.png";
-import medal5 from "../assets/medals/medal-5.png";
 import VideoMetrics from "../components/dashboard/VideoMetrics.vue";
-const medals = [medal1,medal2,medal3,medal4,medal5];
 const fullscreen = ref(false);
 const activeRank = ref(0);
 let rankTimer;
@@ -281,8 +275,8 @@ onBeforeUnmount(() => {
             class="rank-card"
             :class="[`rank-${index + 1}`, { 'rank-active': activeRank === index }]"
           >
-            <img class="rank-medal" :src="medals[index]" :alt="`第${index+1}名奖牌`" />
             <VideoCover :src="video.cover_url" :alt="titleOf(video)" />
+            <img class="rank-medal" :src="'/medals/medal-' + (index + 1) + '.png'" :alt="`第${index+1}名奖牌`" />
             <div class="rank-info">
 
               <h3 :title="titleOf(video)">{{ titleOf(video) }}</h3>

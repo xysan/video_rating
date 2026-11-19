@@ -4,10 +4,10 @@ import { formatCount } from "../../utils/dashboard";
 defineProps({ video: Object });
 const metrics = [
   ["play_count", "播放", PhPlay],
-  ["like_count", "点赞", PhHeart],
-  ["coin_count", "投币", PhCoins],
   ["interact_rate", "互动率", PhStar],
   ["comment_count", "评论", PhChatCircle],
+  ["coin_count", "投币", PhCoins],
+  ["like_count", "点赞", PhHeart],
 ];
 </script>
 <template><dl class="video-metrics">

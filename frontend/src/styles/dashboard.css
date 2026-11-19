@@ -854,3 +854,10 @@
   padding-bottom: var(--space-1);
   font-size: var(--text-sm);
 }
+
+/* 封面裁切仅作用于内部，奖牌在独立层中绘制，避免被封面覆盖。 */
+.leaderboard, .ranking-grid { overflow: visible; }
+.rank-card { position: relative; isolation: isolate; overflow: visible; }
+.rank-card > .video-cover { position: relative; z-index: 0; overflow: hidden; }
+.rank-card > .rank-info { position: relative; z-index: 1; }
+.rank-card > .rank-medal { position: absolute; z-index: 10; overflow: visible; pointer-events: none; }
