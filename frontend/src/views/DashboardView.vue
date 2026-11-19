@@ -25,6 +25,13 @@ import VideoCard from "../components/dashboard/VideoCard.vue";
 import VideoCover from "../components/dashboard/VideoCover.vue";
 import { scoreOf, titleOf } from "../utils/dashboard";
 import "../styles/dashboard.css";
+import medal1 from "../assets/medals/medal-1.png";
+import medal2 from "../assets/medals/medal-2.png";
+import medal3 from "../assets/medals/medal-3.png";
+import medal4 from "../assets/medals/medal-4.png";
+import medal5 from "../assets/medals/medal-5.png";
+import VideoMetrics from "../components/dashboard/VideoMetrics.vue";
+const medals = [medal1,medal2,medal3,medal4,medal5];
 const fullscreen = ref(false);
 const activeRank = ref(0);
 let rankTimer;
@@ -274,15 +281,12 @@ onBeforeUnmount(() => {
             class="rank-card"
             :class="[`rank-${index + 1}`, { 'rank-active': activeRank === index }]"
           >
-            <VideoCover :src="video.cover_url" :alt="titleOf(video)"
-              ><span class="rank-number">{{
-                ["🥇", "🥈", "🥉", "④", "⑤"][index]
-              }}</span></VideoCover
-            >
+            <img class="rank-medal" :src="medals[index]" :alt="`第${index+1}名奖牌`" />
+            <VideoCover :src="video.cover_url" :alt="titleOf(video)" />
             <div class="rank-info">
 
               <h3 :title="titleOf(video)">{{ titleOf(video) }}</h3>
-              <div class="rank-stats"><span><PhPlay />{{ video.play_count ?? "—" }}</span><span><PhStar />{{ video.interact_rate == null ? "—" : (video.interact_rate * 100).toFixed(2)+"%" }}</span><span><PhChatCircle />{{ video.comment_count ?? "—" }}</span><span><PhCoins />{{ video.coin_count ?? "—" }}</span><span><PhHeart />{{ video.like_count ?? "—" }}</span></div>
+              <VideoMetrics :video="video" />
               <div>
                 <span :title="video.up_name">{{ video.up_name }}</span
                 ><strong

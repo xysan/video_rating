@@ -11,6 +11,7 @@ import {
   PhSparkle,
 } from "@phosphor-icons/vue";
 import GlassPanel from "../ui/GlassPanel.vue";
+import VideoMetrics from "./VideoMetrics.vue";
 import VideoCover from "./VideoCover.vue";
 import {
   scoreOf,
@@ -20,13 +21,7 @@ import {
 } from "../../utils/dashboard";
 const props = defineProps({ video: { type: Object, required: true } });
 const score = computed(() => scoreOf(props.video));
-const metrics = [
-  ["play_count", "播放", PhPlay],
-  ["like_count", "点赞", PhHeart],
-  ["coin_count", "投币", PhCoins],
-  ["interact_rate", "互动率", PhStar],
-  ["comment_count", "评论", PhChatCircle],
-];
+
 </script>
 <template>
   <GlassPanel
@@ -54,18 +49,7 @@ const metrics = [
           aria-label="高分视频"
         />
       </div>
-      <dl class="video-metrics">
-        <div
-          v-for="[field, label, icon] in metrics"
-          :key="field"
-          :title="`${label}：${video[field] ?? '暂无数据'}`"
-        >
-          <dt>
-            <component :is="icon" aria-hidden="true" /><span>{{ label }}</span>
-          </dt>
-          <dd>{{ field === "interact_rate" ? (video[field] == null ? "—" : (video[field]*100).toFixed(2)+"%") : formatCount(video[field]) }}</dd>
-        </div>
-      </dl>
+      <VideoMetrics :video="video" />
       <footer class="video-credits">
         <strong :title="video.up_name">{{
           video.up_name || "未知 UP 主"

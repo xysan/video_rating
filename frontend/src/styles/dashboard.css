@@ -751,3 +751,106 @@
 .dashboard-heading .workspace-badge { margin-left: auto; }
 .dashboard-heading time { display: inline; white-space: nowrap; }
 .dashboard-zones { grid-template-rows: minmax(0, 1.15fr) minmax(0, 1.35fr); }
+
+/* 高光封面保持完整比例，使用原图奖牌。 */
+.dashboard-zones{grid-template-rows:minmax(0,1.4fr) minmax(0,1.35fr)}
+.leaderboard{padding:var(--space-3)}
+.ranking-grid{gap:var(--space-2);grid-template-columns:repeat(5,minmax(0,1fr));align-items:start}
+.rank-card{height:auto;min-width:0}
+.rank-card .video-cover{flex:none;width:100%;height:auto;aspect-ratio:4/3}
+.rank-card .video-cover>img{object-fit:contain}
+.rank-card > .rank-medal{position:absolute;top:var(--space-1);left:var(--space-1);width:48px;height:48px;object-fit:contain;filter:drop-shadow(var(--medal-shadow));z-index:2}
+.rank-info{display:flex;flex-direction:column;gap:var(--space-2)}
+
+/* 宽屏封面与紧凑信息区，为底部署名留出完整空间。 */
+.dashboard-zones { grid-template-rows: minmax(0,1.15fr) minmax(0,1.35fr); }
+.rank-card .video-cover,
+.video-card > .video-cover {
+  aspect-ratio: 16 / 9;
+  height: auto;
+  max-height: none;
+  flex: none;
+}
+.rank-info { padding: var(--space-1) var(--space-2); gap: var(--space-1); overflow: visible; }
+.rank-info > div:last-child { flex-wrap: wrap; gap: var(--space-1); }
+.rank-info > div:last-child > span { white-space: normal; overflow: visible; overflow-wrap: anywhere; }
+.rank-card > .rank-medal {
+  width: var(--rank-medal-size);
+  height: var(--rank-medal-size);
+  transform-origin: center;
+  transition: transform .3s ease;
+}
+.rank-active > .rank-medal {
+  transform: scale(1.2);
+  animation: rank-medal-shake .5s ease-in-out;
+}
+@keyframes rank-medal-shake {
+  0% { transform: scale(1) rotate(0deg); }
+  25% { transform: scale(1.2) rotate(-10deg); }
+  55% { transform: scale(1.2) rotate(8deg); }
+  80% { transform: scale(1.2) rotate(-4deg); }
+  100% { transform: scale(1.2) rotate(0deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rank-card > .rank-medal { animation: none; transition: none; }
+}
+
+/* 高光按内容计算高度，奖牌独立于封面裁切层。 */
+.dashboard-zones { grid-template-rows: auto minmax(0, 1fr); }
+.leaderboard { overflow: visible; min-height: min-content; }
+.ranking-grid { flex: none; min-height: min-content; overflow: visible; padding-top: var(--space-5); }
+.rank-card { position: relative; height: auto; min-height: min-content; overflow: visible; }
+.rank-card > .video-cover { border-radius: var(--radius-input) var(--radius-input) 0 0; }
+.rank-info { flex: none; }
+.rank-card > .rank-medal { width: var(--rank-medal-size); height: var(--rank-medal-size); top: calc(-1 * var(--space-5)); left: var(--space-5); }
+.video-rail { gap: var(--space-3); padding-inline: 0; }
+.video-rail > .video-card { flex: 0 0 calc((100% - 4 * var(--space-3)) / 5); min-width: 0; }
+
+/* 压缩外围留白，封面等比例缩放，为署名保留不可压缩的空间。 */
+.rank-card > .rank-medal { left: 0; }
+.dashboard { gap: var(--space-2); }
+.dashboard-zones { gap: var(--space-3); }
+.leaderboard { padding: var(--space-2); gap: var(--space-1); }
+.ranking-grid { padding-bottom: var(--space-1); }
+.dashboard-footnote { margin-block: 0; padding-block: 0; flex-shrink: 0; }
+.video-section { gap: var(--space-1); }
+.video-rail { padding-block: var(--space-1); }
+.video-rail > .video-card { max-height: none; height: 100%; }
+.video-card > .video-cover {
+  width: min(100%, max(0px, calc((100cqh - 10rem) * 16 / 9)));
+  align-self: center;
+  aspect-ratio: 16 / 9;
+  height: auto;
+  flex-shrink: 0;
+}
+.video-card-body {
+  flex: 1 0 auto;
+  min-height: min-content;
+  padding: var(--space-1) var(--space-2);
+  gap: var(--space-1);
+}
+.video-credits {
+  flex-shrink: 0;
+  margin-top: auto;
+  padding-top: var(--space-1);
+  align-items: center;
+}
+@media (max-height: 800px) {
+  .dashboard-heading { padding-block: 0; }
+  .leaderboard .section-kicker, .video-section .section-kicker { display: none; }
+  .dashboard .section-heading h2 { font-size: var(--text-sm); }
+  .video-score-row { min-height: 0; }
+  .video-score { font-size: var(--text-intro); }
+  .rank-info { gap: 0; }
+  .rank-info strong { font-size: var(--text-intro); }
+}
+
+/* 仅调整矩阵卡片内部留白，保持外部尺寸和封面比例。 */
+.video-card-body > .video-metrics {
+  margin-top: var(--space-2);
+}
+.video-card-body > .video-credits {
+  padding-top: var(--space-2);
+  padding-bottom: var(--space-1);
+  font-size: var(--text-sm);
+}
