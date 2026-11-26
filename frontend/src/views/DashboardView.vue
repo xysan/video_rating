@@ -96,12 +96,13 @@ function loopGeometry() {
   return {
     start: left(nodes[count]),
     length: left(nodes[count * 2]) - left(nodes[count]),
-    step: left(nodes[1]) - left(nodes[0]),
+    step: nodes[count].getBoundingClientRect().width +
+      (parseFloat(getComputedStyle(el).columnGap) || 0),
   };
 }
 function normalizeLoop() {
   const geometry = loopGeometry();
-  if (!geometry) return;
+  if (!geometry || geometry.length <= 0) return;
   const { start, length } = geometry;
   const offset = rail.value.scrollLeft - start;
   if (offset < 0 || offset >= length) {
@@ -187,7 +188,9 @@ function move(direction) {
   const geometry = loopGeometry();
   if (!geometry) return;
   el.scrollTo({
-    left: el.scrollLeft + geometry.step * direction,
+    // 按当前实际列宽对齐，避免拖动后的零碎偏移累积。
+    left: geometry.start +
+      (Math.round((el.scrollLeft - geometry.start) / geometry.step) + direction) * geometry.step,
     behavior: reduced.value ? "instant" : "smooth",
   });
 }
