@@ -87,7 +87,7 @@
   margin: 0;
   list-style: none;
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, calc((100% - 4 * var(--space-3)) / 5)));
   gap: var(--space-3);
   flex: 1;
   min-height: 0;
@@ -694,7 +694,7 @@
 /* 五项指标等宽排列，每列的标签和数值共享字体并居中对齐。 */
 .video-metrics {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, calc((100% - 4 * var(--space-3)) / 5)));
   gap: var(--space-2);
   margin: 0;
   flex-shrink: 0;
@@ -865,7 +865,7 @@
 /* 横向循环轨道使用五列宽度，额外视频继续按同宽隐式列排列。 */
 .video-rail {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, calc((100% - 4 * var(--space-3)) / 5)));
   grid-auto-flow: column;
   grid-auto-columns: calc((100% - 4 * var(--space-3)) / 5);
   gap: var(--space-3);
