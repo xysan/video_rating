@@ -82,3 +82,21 @@
 :root { --rank-medal-size: 56px; }
 
 :root { --rank-medal-size: 64px; }
+
+/* 尺寸同时受宽度和高度约束，避免宽而矮的视口过度放大。 */
+:root {
+  --text-xs: clamp(10px, min(.8vw, 1.4vh), 12px);
+  --text-sm: clamp(11px, min(.9vw, 1.6vh), 14px);
+  --text-body: clamp(12px, min(1vw, 1.8vh), 16px);
+  --text-lg: clamp(14px, min(1.1vw, 2vh), 18px);
+  --text-intro: clamp(16px, min(1.3vw, 2.3vh), 22px);
+  --text-heading: clamp(18px, min(1.5vw, 3vh), 28px);
+  --sidebar-width: clamp(160px, min(15vw, 25vh), 240px);
+  --space-3: clamp(6px, min(.85vw, 1.3vh), 12px);
+  --space-4: clamp(8px, min(1vw, 1.8vh), 16px);
+  --space-5: clamp(10px, min(1.3vw, 2vh), 20px);
+  --space-6: clamp(12px, min(1.5vw, 2.4vh), 24px);
+  --space-8: clamp(16px, min(2vw, 3vh), 32px);
+  --control-height: clamp(36px, min(3.6vw, 6vh), 52px);
+}
+@media(max-width:720px) { :root { --sidebar-width: 76px; } }
