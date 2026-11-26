@@ -26,7 +26,7 @@ import VideoCover from "../components/dashboard/VideoCover.vue";
 import { scoreOf, titleOf } from "../utils/dashboard";
 import "../styles/dashboard.css";
 import VideoMetrics from "../components/dashboard/VideoMetrics.vue";
-const fullscreen = ref(false);
+import { isDashboardFullscreen as fullscreen } from "../auth/dashboardFullscreen";
 const activeRank = ref(0);
 let rankTimer;
 async function toggleFullscreen() {
@@ -209,6 +209,7 @@ onMounted(() => {
   }, 60000);
 });
 onBeforeUnmount(() => {
+  fullscreen.value = false;
   clearInterval(rankTimer);
   controller?.abort();
   clearTimeout(settleTimer);

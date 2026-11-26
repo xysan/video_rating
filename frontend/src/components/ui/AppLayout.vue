@@ -9,6 +9,7 @@ import {
   PhArrowUpRight,
 } from "@phosphor-icons/vue";
 import { session, clearSession } from "../../auth/session";
+import { isDashboardFullscreen } from "../../auth/dashboardFullscreen";
 import GlassPanel from "./GlassPanel.vue";
 const router = useRouter(),
   route = useRoute();
@@ -34,7 +35,7 @@ function logout() {
 }
 </script>
 <template>
-  <div class="app-layout">
+  <div class="app-layout" :class="{ 'dashboard-fullscreen': isDashboardFullscreen }">
     <GlassPanel as="aside" class="sidebar"
       ><RouterLink
         :to="`${prefix}/dashboard`"
