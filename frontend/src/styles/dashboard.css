@@ -877,3 +877,35 @@
 .video-metrics dt, .video-metrics dd { font-size: clamp(9px, 3.8cqw, 13px); }
 .rank-info strong { font-size: var(--text-heading); }
 .dashboard-fullscreen .dashboard { width: 100%; }
+/* 卡片内容以自身宽度为基准；中间容器保持继承，避免 em 多层叠乘。 */
+.rank-card, .video-card { container-type: inline-size; }
+.rank-card > .rank-info, .video-card > .video-card-body {
+  font-size: 4.4cqw;
+  line-height: 1.35;
+  padding: .5em .65em;
+  gap: .55em;
+}
+.rank-card .rank-info h3, .video-card .video-card-body h3 {
+  font-size: 1.05em; line-height: 1.4; margin: 0; padding: 0;
+}
+.rank-card .video-metrics, .video-card .video-metrics {
+  font-size: 1em; gap: .35em; margin: .65em 0 0; padding: 0;
+}
+.rank-card .video-metrics > div, .video-card .video-metrics > div { gap: .3em; padding: 0; }
+.rank-card .video-metrics dt, .rank-card .video-metrics dd,
+.video-card .video-metrics dt, .video-card .video-metrics dd {
+  font-size: .85em; line-height: 1.35; margin: 0; gap: .2em;
+}
+.rank-card .video-metrics svg, .video-card .video-metrics svg { width: 1em; height: 1em; flex: none; }
+.video-card .video-score-row { font-size: 1em; min-height: 2em; gap: .5em; }
+.video-card .score-caption, .video-card .collecting-label { font-size: .9em; }
+.video-card .collecting-label { padding: .25em .5em; }
+.video-card .video-score, .rank-card .rank-info strong { font-size: 2em; line-height: 1; }
+.video-card .video-score small, .rank-card .rank-info strong small { font-size: .4em; margin-left: .25em; }
+.video-card .high-sparkle { width: 1.2em; height: 1.2em; }
+.video-card .video-credits { font-size: .9em; gap: .5em; margin-top: auto; padding: .65em 0 .35em; }
+.video-card .video-credits strong, .video-card .video-credits span { font-size: 1em; line-height: 1.35; }
+.rank-card .rank-info > div { font-size: 1em; gap: .5em; margin-top: .5em; }
+.rank-card .rank-info > div > span { font-size: .9em; }
+.video-card .publish-badge { font-size: 3.8cqw; top: .6em; right: .6em; padding: .3em .5em; }
+.rank-card > .rank-medal { width: 22cqw; height: 22cqw; top: -6cqw; left: 0; }
